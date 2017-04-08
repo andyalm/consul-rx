@@ -1,8 +1,13 @@
 @foreach (var service in Model.Services)
 {
-    <li>@service.Key - @service.Value[0].Address</li>
+    @:@service[0].ServiceName
+    foreach (var s in service)
+    {
+        @:@s.Address @s.ServicePort
+    }
+
 }
 @foreach (var kv in Model.KVPairs)
 {
-    <li>@kv.Key - @System.Text.Encoding.UTF8.GetString(kv.Value.Value)</li>
+    @:@kv.Key - @System.Text.Encoding.UTF8.GetString(kv.Value)
 }

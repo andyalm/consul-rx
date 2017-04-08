@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using Consul;
 using ConsulTemplate.Templating;
 using ConsulTemplateDotNet.Models;
 using ConsulTemplateDotNet.Reactive;
 using Microsoft.Extensions.Configuration;
+using System.Reactive.Linq;
 
 namespace ConsulTemplateDotNet
 {
@@ -27,47 +29,49 @@ namespace ConsulTemplateDotNet
 
             var model = new TemplateModel();
 
-            var servicesObservable = client.ObserveServices(args);
-            servicesObservable.Subscribe(services =>
-            {
-                model.UpdateService(services);
-                if (model.Services.Count > 0)
-                {
-                    try
-                    {
-                        Console.WriteLine($"Rendering template");
-                        var template = new Template("example.cshtml");
-                        template.Render(Console.Out, model);
-                        Console.WriteLine();
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex);
-                        throw;
-                    }
-                }
-            });
-            var kvObservable = client.ObserveKeys(args).Subscribe(kv => {
-                model.UpdateKey(kv);
-                if (model.KVPairs.Count > 0)
-                {
-                    try
-                    {
-                        Console.WriteLine($"Rendering template for kv change");
-                        var template = new Template("example.cshtml");
-                        template.Render(Console.Out, model);
-                        Console.WriteLine();
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex);
-                        throw;
-                    }
-                }
-            });
+            client.ObserveServices(args.Where(a => a.Contains("-")))
+                .Subscribe(services => WithErrorLogging(() => model.UpdateService(services)));
+            client.ObserveKeys(args.Where(a => !a.Contains("-")))
+                .Subscribe(kv => WithErrorLogging(() => model.UpdateKey(kv)));
 
-            //client.ObserveKeys(args).Subscribe(pair => Console.WriteLine($"{pair.Key} = {Encoding.UTF8.GetString(pair.Value)}"));
+            Observable.FromEventPattern<EventHandler<TemplateModel>, TemplateModel>(
+                h => model.Changed += h,
+                h => model.Changed -= h)
+                .Subscribe(m => RenderTemplate(m.EventArgs));
+            
             Thread.Sleep(-1);
+        }
+
+        private static void WithErrorLogging(Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                throw;
+            }
+        }
+
+        private static void RenderTemplate(TemplateModel model)
+        {
+            if (model.Services.Any() || model.KVPairs.Any())
+            {
+                try
+                {
+                    Console.WriteLine($"Rendering template");
+                    var template = new Template("example.cshtml");
+                    template.Render(Console.Out, model);
+                    Console.WriteLine();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                    throw;
+                }
+            }
         }
     }
 }

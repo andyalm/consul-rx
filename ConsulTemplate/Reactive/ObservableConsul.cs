@@ -64,10 +64,18 @@ namespace ConsulTemplateDotNet.Reactive
             ulong index = default(ulong);
             return Observable.FromAsync(async () =>
             {
-                var result = await poll(index);
-                index = result.LastIndex;
+                try
+                {
+                    var result = await poll(index);
+                    index = result.LastIndex;
 
-                return result.Response;
+                    return result.Response;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                    throw;
+                }
             }).Repeat();
         }
     }

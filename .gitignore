@@ -1,4 +1,6 @@
 [Bb]in/
 [Oo]bj/
 .idea/
+.vs/
 development.yml
+ConsulTemplate/Properties/launchSettings.json
