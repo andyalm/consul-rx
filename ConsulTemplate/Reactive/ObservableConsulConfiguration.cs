@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ConsulTemplateDotNet.Reactive
+namespace ConsulTemplate.Reactive
 {
     public class ObservableConsulConfiguration
     {

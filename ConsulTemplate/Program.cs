@@ -1,15 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Threading;
 using Consul;
+using ConsulTemplate.Reactive;
 using ConsulTemplate.Templating;
-using ConsulTemplateDotNet.Models;
-using ConsulTemplateDotNet.Reactive;
 using Microsoft.Extensions.Configuration;
-using System.Reactive.Linq;
 
-namespace ConsulTemplateDotNet
+namespace ConsulTemplate
 {
     class Program
     {
@@ -30,14 +29,11 @@ namespace ConsulTemplateDotNet
             var model = new TemplateModel();
 
             client.ObserveServices(args.Where(a => a.Contains("-")))
-                .Subscribe(services => WithErrorLogging(() => model.UpdateService(services)));
+                .Subscribe(services => WithErrorLogging(() => model.UpdateService(services.ToService())));
             client.ObserveKeys(args.Where(a => !a.Contains("-")))
-                .Subscribe(kv => WithErrorLogging(() => model.UpdateKey(kv)));
+                .Subscribe(kv => WithErrorLogging(() => model.UpdateKey(kv.ToKeyValuePair())));
 
-            Observable.FromEventPattern<EventHandler<TemplateModel>, TemplateModel>(
-                h => model.Changed += h,
-                h => model.Changed -= h)
-                .Subscribe(m => RenderTemplate(m.EventArgs));
+            model.Changes.Subscribe(RenderTemplate);
             
             Thread.Sleep(-1);
         }

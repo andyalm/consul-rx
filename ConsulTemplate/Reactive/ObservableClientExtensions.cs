@@ -1,6 +1,6 @@
 ﻿using Consul;
 
-namespace ConsulTemplateDotNet.Reactive
+namespace ConsulTemplate.Reactive
 {
     public static class ObservableClientExtensions
     {

@@ -1,13 +1,15 @@
+services:
 @foreach (var service in Model.Services)
 {
-    @:@service[0].ServiceName
-    foreach (var s in service)
-    {
-        @:@s.Address @s.ServicePort
-    }
+  @:@service.Name:
+  foreach (var node in service.Nodes)
+  {
+    @:http://@node.Address:@node.Port
+  }
 
 }
+settings:
 @foreach (var kv in Model.KVPairs)
 {
-    @:@kv.Key - @System.Text.Encoding.UTF8.GetString(kv.Value)
+  @:'@kv.Key': @kv.Value
 }

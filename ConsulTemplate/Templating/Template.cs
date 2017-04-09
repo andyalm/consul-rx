@@ -1,5 +1,5 @@
 ﻿using System.IO;
-using ConsulTemplateDotNet.Models;
+using ConsulTemplate.Reactive;
 using RazorLight;
 using RazorLight.Compilation;
 
