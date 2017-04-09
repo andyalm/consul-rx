@@ -2,11 +2,10 @@ services:
 @foreach (var service in Model.Services)
 {
   @:@service.Name:
-  foreach (var node in service.Nodes)
+  @foreach (var node in service.Nodes)
   {
     @:http://@node.Address:@node.Port
   }
-
 }
 settings:
 @foreach (var kv in Model.KVPairs)
