@@ -58,7 +58,7 @@ namespace ConsulTemplate
                 try
                 {
                     Console.WriteLine($"Rendering template");
-                    var template = new Template("example.cshtml");
+                    var template = new Template("example.yml.razor");
                     template.Render(Console.Out, model);
                     Console.WriteLine();
                 }
