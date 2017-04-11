@@ -1,14 +1,6 @@
 services:
-@foreach (var service in Model.Services)
-{
-  @:@service.Name:
-  @foreach (var node in service.Nodes)
+  consul:
+  @foreach(var node in ServiceNodes("consul"))
   {
     @:http://@node.Address:@node.Port
   }
-}
-settings:
-@foreach (var kv in Model.KVPairs)
-{
-  @:'@kv.Key': @kv.Value
-}

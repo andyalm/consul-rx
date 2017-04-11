@@ -26,14 +26,17 @@ namespace ConsulTemplate
                 c.Token = config["gossip-token"];
             }).Observable(new ObservableConsulConfiguration { WaitTime = TimeSpan.FromSeconds(10)});
 
+            var template = new Template("example.yml.razor");
+            var templateAnalysis = template.Analyse();
+
             var model = new TemplateModel();
 
-            client.ObserveServices(args.Where(a => a.Contains("-")))
+            client.ObserveServices(templateAnalysis.RequiredServices)
                 .Subscribe(services => WithErrorLogging(() => model.UpdateService(services.ToService())));
-            client.ObserveKeys(args.Where(a => !a.Contains("-")))
+            client.ObserveKeys(templateAnalysis.RequiredKeys)
                 .Subscribe(kv => WithErrorLogging(() => model.UpdateKey(kv.ToKeyValuePair())));
 
-            model.Changes.Subscribe(RenderTemplate);
+            model.Changes.Subscribe(m => RenderTemplate(template, m));
             
             Thread.Sleep(-1);
         }
@@ -51,14 +54,13 @@ namespace ConsulTemplate
             }
         }
 
-        private static void RenderTemplate(TemplateModel model)
+        private static void RenderTemplate(Template template, TemplateModel model)
         {
             if (model.Services.Any() || model.KVPairs.Any())
             {
                 try
                 {
                     Console.WriteLine($"Rendering template");
-                    var template = new Template("example.yml.razor");
                     template.Render(Console.Out, model);
                     Console.WriteLine();
                 }

@@ -21,6 +21,14 @@ namespace ConsulTemplate.Reactive
 
         public IObservable<T> Changes => _changes;
 
+        public T Get(string key)
+        {
+            if (_dictionary.TryGetValue(key, out T value))
+                return value;
+            else
+                return default(T);
+        }
+
         public void TryUpdate(T value)
         {
             bool changed = false;
