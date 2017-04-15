@@ -24,19 +24,22 @@ namespace ConsulTemplate
 
             _consulState = new ConsulState();
 
-            _subscriptions.Add(client.ObserveServices(_templateAnalysis.RequiredServices)
-                .Catch<CatalogService[], ConsulApiException>(ex => client.ObserveServices(_templateAnalysis.RequiredServices))
-                .Subscribe(services => WithErrorLogging(() => _consulState.UpdateService(services.ToService()))));
-
-            _subscriptions.Add(client.ObserveKeys(_templateAnalysis.RequiredKeys)
-                .Catch<KVPair, ConsulApiException>(ex => client.ObserveKeys(_templateAnalysis.RequiredKeys))
-                .Subscribe(kv => WithErrorLogging(() => _consulState.UpdateKVNode(kv.ToKeyValueNode()))));
-
-            _subscriptions.Add(client.ObserveKeysRecursive(_templateAnalysis.RequiredKeyPrefixes)
-                .Catch<KVPair[], ConsulApiException>(ex => client.ObserveKeysRecursive(_templateAnalysis.RequiredKeyPrefixes))
-                .Subscribe(kv => WithErrorLogging(() => _consulState.UpdateKVNodes(kv.ToKeyValueNodes()))));     
+            Observe(client.ObserveServices(_templateAnalysis.RequiredServices),
+                services => _consulState.UpdateService(services.ToService()));
+            Observe(client.ObserveKeys(_templateAnalysis.RequiredKeys.Concat(_templateAnalysis.OptionalKeys)),
+                kv => _consulState.UpdateKVNode(kv.ToKeyValueNode()));
+            Observe(client.ObserveKeysRecursive(_templateAnalysis.KeyPrefixes),
+                kv => _consulState.UpdateKVNodes(kv.ToKeyValueNodes()));
 
             _subscriptions.Add(_consulState.Changes.Subscribe(_ => RenderTemplate()));
+        }
+
+        private void Observe<T>(IObservable<T> observable, Action<T> subscribe)
+        {
+            _subscriptions.Add(
+                observable
+                .Catch<T,ConsulApiException>(ex => observable)
+                .Subscribe(item => WithErrorLogging(() => subscribe(item))));
         }
 
         public static TemplateProcessor ForRazorTemplate(string templatePath, IObservableConsul client)

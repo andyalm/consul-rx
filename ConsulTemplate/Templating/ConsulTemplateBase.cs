@@ -83,7 +83,7 @@ namespace ConsulTemplate.Templating
         {
             if (AnalysisMode)
             {
-                Analysis.RequiredKeyPrefixes.Add(keyPrefix);
+                Analysis.KeyPrefixes.Add(keyPrefix);
                 return Enumerable.Empty<KeyValueNode>();
             }
 
@@ -94,7 +94,7 @@ namespace ConsulTemplate.Templating
         {
             if (AnalysisMode)
             {
-                Analysis.RequiredKeyPrefixes.Add(keyPrefix);
+                Analysis.KeyPrefixes.Add(keyPrefix);
                 return Enumerable.Empty<KeyValueNode>();
             }
 

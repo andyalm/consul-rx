@@ -18,6 +18,7 @@ namespace ConsulTemplate.Reactive
         {
             _client = client;
             _longPollMaxWait = longPollMaxWait;
+            _aclToken = aclToken;
         }
 
         public ObservableConsul(ObservableConsulConfiguration config)
@@ -46,32 +47,7 @@ namespace ConsulTemplate.Reactive
         public IObservable<KVPair[]> ObserveKeyRecursive(string prefix)
         {
             return LongPoll(index => _client.KV.List(prefix, QueryOptions(index)), result => HandleKVError(result, prefix));
-        }
-
-        public IObservable<KVPair> ObserveKeys(params string[] keys)
-        {
-            return ObserveKeys((IEnumerable<string>)keys);
-        }
-
-        public IObservable<KVPair> ObserveKeys(IEnumerable<string> keys)
-        {
-            return keys.Select(ObserveKey).Merge();
-        }
-
-        public IObservable<KVPair[]> ObserveKeysRecursive(IEnumerable<string> prefixes)
-        {
-            return prefixes.Select(ObserveKeyRecursive).Merge();
-        }
-
-        public IObservable<CatalogService[]> ObserveServices(IEnumerable<string> serviceNames)
-        {
-            return serviceNames.Select(ObserveService).Merge();
-        }
-
-        public IObservable<CatalogService[]> ObserveServices(params string[] serviceNames)
-        {
-            return ObserveServices((IEnumerable<string>)serviceNames);
-        }
+        }   
 
         private QueryOptions QueryOptions(ulong index)
         {
@@ -129,12 +105,31 @@ namespace ConsulTemplate.Reactive
         }
     }
 
-    public class ObservableConsulConfiguration
+    public static class ObservableConsulExtensions
     {
-        public string Endpoint { get; set; }
-        public string Datacenter { get; set; }
-        public string GossipToken { get; set; }
-        public string AclToken { get; set; }
-        public TimeSpan? LongPollMaxWait { get; set; }
+        public static IObservable<KVPair> ObserveKeys(this IObservableConsul client, params string[] keys)
+        {
+            return client.ObserveKeys((IEnumerable<string>)keys);
+        }
+
+        public static IObservable<KVPair> ObserveKeys(this IObservableConsul client, IEnumerable<string> keys)
+        {
+            return keys.Select(client.ObserveKey).Merge();
+        }
+
+        public static IObservable<KVPair[]> ObserveKeysRecursive(this IObservableConsul client, IEnumerable<string> prefixes)
+        {
+            return prefixes.Select(client.ObserveKeyRecursive).Merge();
+        }
+
+        public static IObservable<CatalogService[]> ObserveServices(this IObservableConsul client, IEnumerable<string> serviceNames)
+        {
+            return serviceNames.Select(client.ObserveService).Merge();
+        }
+
+        public static IObservable<CatalogService[]> ObserveServices(this IObservableConsul client, params string[] serviceNames)
+        {
+            return client.ObserveServices((IEnumerable<string>)serviceNames);
+        }
     }
 }
