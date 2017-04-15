@@ -8,15 +8,28 @@ using Consul;
 
 namespace ConsulTemplate.Reactive
 {
-    public class ObservableConsul
+    public class ObservableConsul : IObservableConsul
     {
         private readonly ConsulClient _client;
         private readonly TimeSpan? _longPollMaxWait;
+        private readonly string _aclToken; 
 
-        public ObservableConsul(ConsulClient client, TimeSpan? longPollMaxWait)
+        public ObservableConsul(ConsulClient client, TimeSpan? longPollMaxWait = null, string aclToken = null)
         {
             _client = client;
             _longPollMaxWait = longPollMaxWait;
+        }
+
+        public ObservableConsul(ObservableConsulConfiguration config)
+        {
+            _client = new ConsulClient(c =>
+            {
+                c.Address = new Uri(config.Endpoint ?? "http://localhost:8500");
+                c.Datacenter = config.Datacenter;
+                c.Token = config.GossipToken;
+            });
+            _longPollMaxWait = config.LongPollMaxWait;
+            _aclToken = config.AclToken;
         }
 
         public IObservable<CatalogService[]> ObserveService(string serviceName)
@@ -64,7 +77,7 @@ namespace ConsulTemplate.Reactive
         {
             return new QueryOptions
             {
-                Token = "anonymous",
+                Token = _aclToken ?? "anonymous",
                 WaitIndex = index,
                 WaitTime = _longPollMaxWait
             };
@@ -114,5 +127,14 @@ namespace ConsulTemplate.Reactive
                 }
             }).Repeat();
         }
+    }
+
+    public class ObservableConsulConfiguration
+    {
+        public string Endpoint { get; set; }
+        public string Datacenter { get; set; }
+        public string GossipToken { get; set; }
+        public string AclToken { get; set; }
+        public TimeSpan? LongPollMaxWait { get; set; }
     }
 }
