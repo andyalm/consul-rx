@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Text;
 using System.Threading;
 using Consul;
 using ConsulTemplate.Reactive;
@@ -23,20 +24,26 @@ namespace ConsulTemplate
             {
                 c.Address = new Uri(config["endpoint"] ?? "http://localhost:8500");
                 c.Datacenter = config["datacenter"];
-                c.Token = config["gossip-token"];
-            }).Observable(new ObservableConsulConfiguration { WaitTime = TimeSpan.FromSeconds(10)});
+                c.Token = config["gossipToken"];
+            }).Observable(config.GetValue<TimeSpan?>("longPollMaxWait"));
 
-            var template = new Template("example.yml.razor");
-            var templateAnalysis = template.Analyse();
+            var templatePath = "example.yml.razor";
+            var renderer = new RazorTemplateRenderer(new [] {templatePath});
+            var templateAnalysis = renderer.Analyse(templatePath);
 
-            var model = new TemplateModel();
+            var model = new ConsulState();
 
             client.ObserveServices(templateAnalysis.RequiredServices)
+                .Catch<CatalogService[],ConsulApiException>(ex => client.ObserveServices(templateAnalysis.RequiredServices))
                 .Subscribe(services => WithErrorLogging(() => model.UpdateService(services.ToService())));
             client.ObserveKeys(templateAnalysis.RequiredKeys)
-                .Subscribe(kv => WithErrorLogging(() => model.UpdateKey(kv.ToKeyValuePair())));
+                .Catch<KVPair,ConsulApiException>(ex => client.ObserveKeys(templateAnalysis.RequiredKeys))
+                .Subscribe(kv => WithErrorLogging(() => model.UpdateKVNode(kv.ToKeyValueNode())));
+            client.ObserveKeysRecursive(templateAnalysis.RequiredKeyPrefixes)
+                .Catch<KVPair[],ConsulApiException>(ex => client.ObserveKeysRecursive(templateAnalysis.RequiredKeyPrefixes))
+                .Subscribe(kv => WithErrorLogging(() => model.UpdateKVNodes(kv.ToKeyValueNodes())));
 
-            model.Changes.Subscribe(m => RenderTemplate(template, m));
+            model.Changes.Subscribe(m => RenderTemplate(renderer, templatePath, m));
             
             Thread.Sleep(-1);
         }
@@ -54,14 +61,14 @@ namespace ConsulTemplate
             }
         }
 
-        private static void RenderTemplate(Template template, TemplateModel model)
+        private static void RenderTemplate(ITemplateRenderer razorTemplateRenderer, string templatePath, ConsulState model)
         {
-            if (model.Services.Any() || model.KVPairs.Any())
+            if (model.Services.Any() || model.KVStore.Any())
             {
                 try
                 {
                     Console.WriteLine($"Rendering template");
-                    template.Render(Console.Out, model);
+                    razorTemplateRenderer.Render(templatePath, Console.Out, model);
                     Console.WriteLine();
                 }
                 catch (Exception ex)

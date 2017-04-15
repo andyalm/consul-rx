@@ -4,3 +4,9 @@ services:
   {
     @:http://@node.Address:@node.Port
   }
+
+keys:
+  @foreach(var node in Tree("test"))
+  {
+    @:@node.FullKey = @node.Value
+  }

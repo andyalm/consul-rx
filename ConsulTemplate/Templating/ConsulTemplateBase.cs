@@ -8,21 +8,22 @@ namespace ConsulTemplate.Templating
 {
     public abstract class ConsulTemplateBase
     {
-        private TemplateModel Model { get; set; }
+        private ConsulState Model { get; set; }
         private TextWriter Writer { get; set; }
 
-        private TemplateAnalysis Analysis { get; } = new TemplateAnalysis();
+        private TemplateAnalysis Analysis { get; set; }
 
         public abstract Task ExecuteAsync();
 
-        private bool AnalysisMode { get; set; } = false;
+        private bool AnalysisMode { get; set; }
 
         public TemplateAnalysis Analyse()
         {
             AnalysisMode = true;
             try
             {
-                Model = new TemplateModel();
+                Analysis = new TemplateAnalysis();
+                Model = new ConsulState();
                 ExecuteAsync().GetAwaiter().GetResult();
 
                 return Analysis;
@@ -33,7 +34,7 @@ namespace ConsulTemplate.Templating
             }
         }
 
-        public void Render(TextWriter writer, TemplateModel model)
+        public void Render(TextWriter writer, ConsulState model)
         {
             Writer = writer;
             Model = model;
@@ -67,7 +68,7 @@ namespace ConsulTemplate.Templating
             return Model.Services.Get(serviceName)?.Nodes ?? Enumerable.Empty<ServiceNode>();
         }
 
-        public string Key(string key)
+        public string Value(string key)
         {
             if (AnalysisMode)
             {
@@ -75,14 +76,29 @@ namespace ConsulTemplate.Templating
                 return string.Empty;
             }
             
-            return Model.KVPairs.Get(key).Value;
+            return Model.KVStore.GetValue(key);
         }
-    }
 
-    public class TemplateAnalysis
-    {
-        public HashSet<string> RequiredKeys { get; } = new HashSet<string>();
-        public HashSet<string> OptionalKeys { get; } = new HashSet<string>();
-        public HashSet<string> RequiredServices { get; } = new HashSet<string>();
+        public IEnumerable<KeyValueNode> Children(string keyPrefix)
+        {
+            if (AnalysisMode)
+            {
+                Analysis.RequiredKeyPrefixes.Add(keyPrefix);
+                return Enumerable.Empty<KeyValueNode>();
+            }
+
+            return Model.KVStore.GetChildren(keyPrefix);
+        }
+
+        public IEnumerable<KeyValueNode> Tree(string keyPrefix)
+        {
+            if (AnalysisMode)
+            {
+                Analysis.RequiredKeyPrefixes.Add(keyPrefix);
+                return Enumerable.Empty<KeyValueNode>();
+            }
+
+            return Model.KVStore.GetTree(keyPrefix);
+        }
     }
 }

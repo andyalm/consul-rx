@@ -24,9 +24,17 @@ namespace ConsulTemplate.Reactive
             };
         }
 
-        public static KeyValuePair<string, string> ToKeyValuePair(this KVPair kv)
+        public static KeyValueNode ToKeyValueNode(this KVPair pair)
         {
-            return new KeyValuePair<string, string>(kv.Key, Encoding.UTF8.GetString(kv.Value));
+            return new KeyValueNode(pair.Key, pair.Value);
+        }
+
+        public static IEnumerable<KeyValueNode> ToKeyValueNodes(this IEnumerable<KVPair> pairs)
+        {
+            if (pairs == null)
+                return Enumerable.Empty<KeyValueNode>();
+
+            return pairs.Select(p => p.ToKeyValueNode());
         }
     }
 }
