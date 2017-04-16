@@ -4,3 +4,4 @@
 .vs/
 development.yml
 ConsulTemplate/Properties/launchSettings.json
+*.user

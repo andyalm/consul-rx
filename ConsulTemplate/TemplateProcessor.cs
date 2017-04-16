@@ -29,7 +29,13 @@ namespace ConsulTemplate
             Observe(() => client.ObserveKeys(_templateDependencies.Keys),
                 kv => ConsulState.UpdateKVNode(kv.ToKeyValueNode()));
             Observe(() => client.ObserveKeysRecursive(_templateDependencies.KeyPrefixes),
-                kv => ConsulState.UpdateKVNodes(kv.ToKeyValueNodes()));
+                kv =>
+                {
+                    if (kv.Result.Response == null || !kv.Result.Response.Any())
+                        ConsulState.MarkKeyPrefixAsMissingOrEmpty(kv.KeyPrefix);
+                    else
+                        ConsulState.UpdateKVNodes(kv.ToKeyValueNodes());
+                });
 
             _subscriptions.Add(ConsulState.Changes.Subscribe(_ => RenderTemplate()));
         }

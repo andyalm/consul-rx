@@ -56,6 +56,7 @@ namespace ConsulTemplate.UnitTests
             _templateDependencies.Services.Add("myservice1");
             _templateDependencies.Services.Add("myservice2");
             _templateDependencies.Keys.Add("mykey1");
+            _templateDependencies.KeyPrefixes.Add("mykeyprefix1");
             CreateProcessor();
             VerifyRenderIsCalled(Times.Never());
             _consul.Keys.OnNext(CreateKeyObservation("mykey1"));
@@ -63,6 +64,8 @@ namespace ConsulTemplate.UnitTests
             _consul.Services.OnNext(CreateServiceObservation("myservice1"));
             VerifyRenderIsCalled(Times.Never());
             _consul.Services.OnNext(CreateServiceObservation("myservice2"));
+            VerifyRenderIsCalled(Times.Never());
+            _consul.KeysRecursive.OnNext(CreateKeyRecursiveObservation("mykeyprefix1"));
             VerifyRenderIsCalled(Times.Once());
         }
 
@@ -90,6 +93,19 @@ namespace ConsulTemplate.UnitTests
             }));
             VerifyRenderIsCalled(Times.Once());
             processor.ConsulState.KVStore.Should().Contain(n => n.FullKey == "missingkey1");
+        }
+
+        [Fact]
+        public void NotFoundErrorRetrievingKeyPrefixWillStillAllowTemplateToBeRendered()
+        {
+            _templateDependencies.KeyPrefixes.Add("mykeyprefix1");
+            var processor = CreateProcessor();
+            _consul.KeysRecursive.OnNext(new KeyRecursiveObservation("mykeyprefix1", new QueryResult<KVPair[]>
+            {
+                StatusCode = HttpStatusCode.NotFound
+            }));
+            VerifyRenderIsCalled(Times.Once());
+            processor.ConsulState.MissingKeyPrefixes.Should().Contain(p => p == "mykeyprefix1");
         }
 
         [Fact]
@@ -141,6 +157,25 @@ namespace ConsulTemplate.UnitTests
                 Response = new KVPair(key)
                 {
                     Value = new byte[0]
+                }
+            });
+        }
+
+        private KeyRecursiveObservation CreateKeyRecursiveObservation(string keyPrefix)
+        {
+            return new KeyRecursiveObservation(keyPrefix, new QueryResult<KVPair[]>
+            {
+                StatusCode = HttpStatusCode.OK,
+                Response = new []
+                {
+                    new KVPair($"{keyPrefix}/child1")
+                    {
+                        Value = new byte[0]
+                    },
+                    new KVPair($"{keyPrefix}/child2")
+                    {
+                        Value = new byte[0]
+                    }
                 }
             });
         }

@@ -9,7 +9,7 @@ namespace ConsulTemplate.Reactive
     {
         private readonly ChangeTrackingCollection<KeyValueNode> _leaves = new ChangeTrackingCollection<KeyValueNode>(n => n.FullKey);
 
-        public IObservable<KeyValueNode> Changes => _leaves.Changes;
+        public IObservable<IEnumerable<KeyValueNode>> Changes => _leaves.Changes;
 
         public void Update(KeyValueNode kvNode)
         {
@@ -18,10 +18,7 @@ namespace ConsulTemplate.Reactive
 
         public void Update(IEnumerable<KeyValueNode> kvNodes)
         {
-            foreach (var kvNode in kvNodes)
-            {
-                _leaves.TryUpdate(kvNode);
-            }
+            _leaves.TryUpdateAll(kvNodes);
         }
 
         public string GetValue(string fullKey)

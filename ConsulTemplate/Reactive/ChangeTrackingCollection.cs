@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reactive.Subjects;
 
 namespace ConsulTemplate.Reactive
@@ -11,7 +12,7 @@ namespace ConsulTemplate.Reactive
         private readonly Func<T, string> _keyAccessor;
         private readonly ConcurrentDictionary<string, T> _dictionary = new ConcurrentDictionary<string, T>(StringComparer.OrdinalIgnoreCase);
         private readonly object _mutex = new object();
-        private readonly Subject<T> _changes = new Subject<T>();
+        private readonly Subject<IEnumerable<T>> _changes = new Subject<IEnumerable<T>>();
         private readonly string _itemName = typeof(T).Name;
 
         public ChangeTrackingCollection(Func<T,string> keyAccessor)
@@ -19,7 +20,7 @@ namespace ConsulTemplate.Reactive
             _keyAccessor = keyAccessor;
         }
 
-        public IObservable<T> Changes => _changes;
+        public IObservable<IEnumerable<T>> Changes => _changes;
 
         public T Get(string key)
         {
@@ -29,37 +30,48 @@ namespace ConsulTemplate.Reactive
                 return default(T);
         }
 
-        public void TryUpdate(T value)
+        public void TryUpdateAll(IEnumerable<T> values)
         {
+            if(!values.Any())
+                return;
+
             bool changed = false;
-            var key = _keyAccessor(value);
             lock (_mutex)
             {
-                if (_dictionary.TryAdd(key, value))
+                foreach (var value in values)
                 {
-                    Console.WriteLine($"Adding {_itemName} {key}");
-                    changed = true;
-                }
-                else
-                {
-                    var existingValue = _dictionary[key];
-                    if (!existingValue.Equals(value))
+                    var key = _keyAccessor(value);
+                    if (_dictionary.TryAdd(key, value))
                     {
-                        Console.WriteLine($"Updating {_itemName} {key}");
-                        _dictionary[key] = value;
+                        Console.WriteLine($"Adding {_itemName} {key}");
                         changed = true;
                     }
                     else
                     {
-                        Console.WriteLine($"Existing value for {_itemName} {key} is the same as the new value");
+                        var existingValue = _dictionary[key];
+                        if (!existingValue.Equals(value))
+                        {
+                            Console.WriteLine($"Updating {_itemName} {key}");
+                            _dictionary[key] = value;
+                            changed = true;
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Existing value for {_itemName} {key} is the same as the new value");
+                        }
                     }
                 }
             }
 
             if (changed)
             {
-                _changes.OnNext(value);
+                _changes.OnNext(values);
             }
+        }
+
+        public void TryUpdate(T value)
+        {
+            TryUpdateAll(new[] { value });
         }
 
         public IEnumerator<T> GetEnumerator()
