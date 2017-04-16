@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reactive.Linq;
+using ConsulTemplate.Templating;
 
 namespace ConsulTemplate.Reactive
 {
@@ -31,6 +33,12 @@ namespace ConsulTemplate.Reactive
         public void UpdateKVNodes(IEnumerable<KeyValueNode> kvNodes)
         {
             KVStore.Update(kvNodes);
+        }
+
+        public bool SatisfiesAll(TemplateDependencies templateDependencies)
+        {
+            return templateDependencies.Services.IsSubsetOf(Services.Select(s => s.Name))
+                   && templateDependencies.Keys.IsSubsetOf(KVStore.Select(s => s.FullKey));
         }
     }
 }

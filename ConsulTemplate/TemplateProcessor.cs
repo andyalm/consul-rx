@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Linq;
-using Consul;
+using System.Net;
 using ConsulTemplate.Reactive;
 using ConsulTemplate.Templating;
 
@@ -11,35 +10,34 @@ namespace ConsulTemplate
     public class TemplateProcessor : IDisposable
     {
         private readonly ITemplateRenderer _renderer;
-        private readonly TemplateAnalysis _templateAnalysis;
-        private readonly ConsulState _consulState;
+        private readonly TemplateDependencies _templateDependencies;
+        public ConsulState ConsulState { get; }
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
         public string TemplatePath { get; }
+
 
         public TemplateProcessor(ITemplateRenderer renderer, IObservableConsul client, string templatePath)
         {
             _renderer = renderer;
-            _templateAnalysis = renderer.Analyse(templatePath);
+            _templateDependencies = renderer.AnalyzeDependencies(templatePath);
             TemplatePath = templatePath;
 
-            _consulState = new ConsulState();
+            ConsulState = new ConsulState();
 
-            Observe(client.ObserveServices(_templateAnalysis.RequiredServices),
-                services => _consulState.UpdateService(services.ToService()));
-            Observe(client.ObserveKeys(_templateAnalysis.RequiredKeys.Concat(_templateAnalysis.OptionalKeys)),
-                kv => _consulState.UpdateKVNode(kv.ToKeyValueNode()));
-            Observe(client.ObserveKeysRecursive(_templateAnalysis.KeyPrefixes),
-                kv => _consulState.UpdateKVNodes(kv.ToKeyValueNodes()));
+            Observe(() => client.ObserveServices(_templateDependencies.Services),
+                services => ConsulState.UpdateService(services.ToService()));
+            Observe(() => client.ObserveKeys(_templateDependencies.Keys),
+                kv => ConsulState.UpdateKVNode(kv.ToKeyValueNode()));
+            Observe(() => client.ObserveKeysRecursive(_templateDependencies.KeyPrefixes),
+                kv => ConsulState.UpdateKVNodes(kv.ToKeyValueNodes()));
 
-            _subscriptions.Add(_consulState.Changes.Subscribe(_ => RenderTemplate()));
+            _subscriptions.Add(ConsulState.Changes.Subscribe(_ => RenderTemplate()));
         }
 
-        private void Observe<T>(IObservable<T> observable, Action<T> subscribe)
+        private void Observe<T>(Func<IObservable<T>> getObservable, Action<T> subscribe) where T : IConsulObservation
         {
-            _subscriptions.Add(
-                observable
-                .Catch<T,ConsulApiException>(ex => observable)
-                .Subscribe(item => WithErrorLogging(() => subscribe(item))));
+            _subscriptions.Add(getObservable()
+                .Subscribe(item => HandleConsulObservable(item, subscribe)));
         }
 
         public static TemplateProcessor ForRazorTemplate(string templatePath, IObservableConsul client)
@@ -58,12 +56,12 @@ namespace ConsulTemplate
 
         private void RenderTemplate()
         {
-            if (_consulState.Services.Any() || _consulState.KVStore.Any())
+            if (ConsulState.SatisfiesAll(_templateDependencies))
             {
                 try
                 {
                     Console.WriteLine($"Rendering template");
-                    _renderer.Render(TemplatePath, Console.Out, _consulState);
+                    _renderer.Render(TemplatePath, Console.Out, ConsulState);
                     Console.WriteLine();
                 }
                 catch (Exception ex)
@@ -74,16 +72,24 @@ namespace ConsulTemplate
             }
         }
 
-        private static void WithErrorLogging(Action action)
+        private void HandleConsulObservable<T>(T observation, Action<T> action) where T : IConsulObservation
         {
-            try
+            if (observation.Result.StatusCode == HttpStatusCode.OK ||
+                observation.Result.StatusCode == HttpStatusCode.NotFound)
             {
-                action();
+                try
+                {
+                    action(observation);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                    throw;
+                }
             }
-            catch (Exception ex)
+            else
             {
-                Console.WriteLine(ex);
-                throw;
+                Console.WriteLine($"Error retrieving something: {observation.Result.StatusCode}");
             }
         }
 

@@ -5,7 +5,7 @@ namespace ConsulTemplate.Templating
 {
     public interface ITemplateRenderer
     {
-        TemplateAnalysis Analyse(string templatePath);
+        TemplateDependencies AnalyzeDependencies(string templatePath);
         void Render(string templatePath, TextWriter writer, ConsulState model);
     }
 }

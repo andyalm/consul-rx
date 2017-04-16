@@ -63,11 +63,11 @@ namespace ConsulTemplate.Templating
             _templateAssembly = Compile(compilation);
         }
 
-        public TemplateAnalysis Analyse(string templatePath)
+        public TemplateDependencies AnalyzeDependencies(string templatePath)
         {
             var metadata = GetTemplateMetadata(templatePath);
             var instance = CreateTemplateInstance(metadata.FullTypeName);
-            return instance.Analyse();
+            return instance.AnalyzeDependencies();
         }
 
 

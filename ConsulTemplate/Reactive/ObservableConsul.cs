@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Consul;
@@ -33,20 +32,20 @@ namespace ConsulTemplate.Reactive
             _aclToken = config.AclToken;
         }
 
-        public IObservable<CatalogService[]> ObserveService(string serviceName)
+        public IObservable<ServiceObservation> ObserveService(string serviceName)
         {
             return LongPoll(index => _client.Catalog.Service(serviceName, null,
-                QueryOptions(index)), result => HandleServiceError(result, serviceName));
+                QueryOptions(index)), result => new ServiceObservation(serviceName, result));
         }
 
-        public IObservable<KVPair> ObserveKey(string key)
+        public IObservable<KeyObservation> ObserveKey(string key)
         {
-            return LongPoll(index => _client.KV.Get(key, QueryOptions(index)), result => HandleKVError(result, key));
+            return LongPoll(index => _client.KV.Get(key, QueryOptions(index)), result => new KeyObservation(key, result));
         }
 
-        public IObservable<KVPair[]> ObserveKeyRecursive(string prefix)
+        public IObservable<KeyRecursiveObservation> ObserveKeyRecursive(string prefix)
         {
-            return LongPoll(index => _client.KV.List(prefix, QueryOptions(index)), result => HandleKVError(result, prefix));
+            return LongPoll(index => _client.KV.List(prefix, QueryOptions(index)), result => new KeyRecursiveObservation(prefix, result));
         }   
 
         private QueryOptions QueryOptions(ulong index)
@@ -59,27 +58,7 @@ namespace ConsulTemplate.Reactive
             };
         }
 
-        private CatalogService[] HandleServiceError(QueryResult<CatalogService[]> result, string serviceName)
-        {
-            if (result.StatusCode == HttpStatusCode.NotFound)
-            {
-                throw new ConsulServiceNotFoundException(serviceName);
-            }
-            
-            throw new ConsulApiException(result.StatusCode, $"Unexpected HTTP response {result.StatusCode} while trying to get service '{serviceName}'");
-        }
-
-        private T HandleKVError<T>(QueryResult<T> result, string key)
-        {
-            if (result.StatusCode == HttpStatusCode.NotFound)
-            {
-                throw new ConsulKeyNotFoundException(key);
-            }
-
-            throw new ConsulApiException(result.StatusCode, $"Unexpected HTTP response {result.StatusCode} while trying to get key '{key}'");
-        }
-
-        private IObservable<T> LongPoll<T>(Func<ulong,Task<QueryResult<T>>> poll, Func<QueryResult<T>,T> onError)
+        private IObservable<TObservation> LongPoll<TResponse,TObservation>(Func<ulong,Task<QueryResult<TResponse>>> poll, Func<QueryResult<TResponse>,TObservation> toObservation)
         {
             ulong index = default(ulong);
             return Observable.FromAsync(async () =>
@@ -89,12 +68,7 @@ namespace ConsulTemplate.Reactive
                     var result = await poll(index);
                     index = result.LastIndex;
 
-                    if (result.StatusCode == HttpStatusCode.OK)
-                    {
-                        return result.Response;
-                    }
-
-                    return onError(result);
+                    return toObservation(result);
                 }
                 catch (Exception ex)
                 {
@@ -107,27 +81,27 @@ namespace ConsulTemplate.Reactive
 
     public static class ObservableConsulExtensions
     {
-        public static IObservable<KVPair> ObserveKeys(this IObservableConsul client, params string[] keys)
+        public static IObservable<KeyObservation> ObserveKeys(this IObservableConsul client, params string[] keys)
         {
             return client.ObserveKeys((IEnumerable<string>)keys);
         }
 
-        public static IObservable<KVPair> ObserveKeys(this IObservableConsul client, IEnumerable<string> keys)
+        public static IObservable<KeyObservation> ObserveKeys(this IObservableConsul client, IEnumerable<string> keys)
         {
             return keys.Select(client.ObserveKey).Merge();
         }
 
-        public static IObservable<KVPair[]> ObserveKeysRecursive(this IObservableConsul client, IEnumerable<string> prefixes)
+        public static IObservable<KeyRecursiveObservation> ObserveKeysRecursive(this IObservableConsul client, IEnumerable<string> prefixes)
         {
             return prefixes.Select(client.ObserveKeyRecursive).Merge();
         }
 
-        public static IObservable<CatalogService[]> ObserveServices(this IObservableConsul client, IEnumerable<string> serviceNames)
+        public static IObservable<ServiceObservation> ObserveServices(this IObservableConsul client, IEnumerable<string> serviceNames)
         {
             return serviceNames.Select(client.ObserveService).Merge();
         }
 
-        public static IObservable<CatalogService[]> ObserveServices(this IObservableConsul client, params string[] serviceNames)
+        public static IObservable<ServiceObservation> ObserveServices(this IObservableConsul client, params string[] serviceNames)
         {
             return client.ObserveServices((IEnumerable<string>)serviceNames);
         }

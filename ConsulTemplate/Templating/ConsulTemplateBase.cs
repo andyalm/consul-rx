@@ -11,22 +11,22 @@ namespace ConsulTemplate.Templating
         private ConsulState Model { get; set; }
         private TextWriter Writer { get; set; }
 
-        private TemplateAnalysis Analysis { get; set; }
+        private TemplateDependencies Dependencies { get; set; }
 
         public abstract Task ExecuteAsync();
 
         private bool AnalysisMode { get; set; }
 
-        public TemplateAnalysis Analyse()
+        public TemplateDependencies AnalyzeDependencies()
         {
             AnalysisMode = true;
             try
             {
-                Analysis = new TemplateAnalysis();
+                Dependencies = new TemplateDependencies();
                 Model = new ConsulState();
                 ExecuteAsync().GetAwaiter().GetResult();
 
-                return Analysis;
+                return Dependencies;
             }
             finally
             {
@@ -61,7 +61,7 @@ namespace ConsulTemplate.Templating
         {
             if (AnalysisMode)
             {
-                Analysis.RequiredServices.Add(serviceName);
+                Dependencies.Services.Add(serviceName);
                 return Enumerable.Empty<ServiceNode>();
             }
             
@@ -72,7 +72,7 @@ namespace ConsulTemplate.Templating
         {
             if (AnalysisMode)
             {
-                Analysis.RequiredKeys.Add(key);
+                Dependencies.Keys.Add(key);
                 return string.Empty;
             }
             
@@ -83,7 +83,7 @@ namespace ConsulTemplate.Templating
         {
             if (AnalysisMode)
             {
-                Analysis.KeyPrefixes.Add(keyPrefix);
+                Dependencies.KeyPrefixes.Add(keyPrefix);
                 return Enumerable.Empty<KeyValueNode>();
             }
 
@@ -94,7 +94,7 @@ namespace ConsulTemplate.Templating
         {
             if (AnalysisMode)
             {
-                Analysis.KeyPrefixes.Add(keyPrefix);
+                Dependencies.KeyPrefixes.Add(keyPrefix);
                 return Enumerable.Empty<KeyValueNode>();
             }
 

@@ -8,27 +8,27 @@ namespace ConsulTemplate.UnitTests.Support
 {
     public class FakeObservableConsul : IObservableConsul
     {
-        public Subject<CatalogService[]> Services { get; } = new Subject<CatalogService[]>();
-        public List<string> ObservingServices { get; } = new List<string>();
-        public IObservable<CatalogService[]> ObserveService(string serviceName)
+        public Subject<ServiceObservation> Services { get; } = new Subject<ServiceObservation>();
+        public HashSet<string> ObservingServices { get; } = new HashSet<string>();
+        public IObservable<ServiceObservation> ObserveService(string serviceName)
         {
             ObservingServices.Add(serviceName);
 
             return Services;
         }
 
-        public Subject<KVPair> Keys { get; } = new Subject<KVPair>();
-        public List<string> ObservingKeys { get; } = new List<string>();
-        public IObservable<KVPair> ObserveKey(string key)
+        public Subject<KeyObservation> Keys { get; } = new Subject<KeyObservation>();
+        public HashSet<string> ObservingKeys { get; } = new HashSet<string>();
+        public IObservable<KeyObservation> ObserveKey(string key)
         {
             ObservingKeys.Add(key);
 
             return Keys;
         }
 
-        public Subject<KVPair[]> KeysRecursive { get; } = new Subject<KVPair[]>();
-        public List<string> ObservingKeyPrefixes { get; } = new List<string>();
-        public IObservable<KVPair[]> ObserveKeyRecursive(string prefix)
+        public Subject<KeyRecursiveObservation> KeysRecursive { get; } = new Subject<KeyRecursiveObservation>();
+        public HashSet<string> ObservingKeyPrefixes { get; } = new HashSet<string>();
+        public IObservable<KeyRecursiveObservation> ObserveKeyRecursive(string prefix)
         {
             ObservingKeyPrefixes.Add(prefix);
 
