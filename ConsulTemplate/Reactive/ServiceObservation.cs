@@ -1,16 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using Consul;
 
 namespace ConsulTemplate.Reactive
 {
-    public interface IConsulObservation
-    {
-        QueryResult Result { get; }
-    }
-
     public class ServiceObservation : IConsulObservation
     {
         public string ServiceName { get; }
@@ -44,45 +38,6 @@ namespace ConsulTemplate.Reactive
                     })
                     .ToArray()
             };
-        }
-    }
-
-    public class KeyObservation : IConsulObservation
-    {
-        public string Key { get; }
-        public QueryResult<KVPair> Result { get; }
-        QueryResult IConsulObservation.Result => Result;
-
-        public KeyObservation(string key, QueryResult<KVPair> result)
-        {
-            Key = key;
-            Result = result;
-        }
-
-        public KeyValueNode ToKeyValueNode()
-        {
-            return new KeyValueNode(Key, Result.Response?.Value ?? new byte[0]);
-        }
-    }
-
-    public class KeyRecursiveObservation : IConsulObservation
-    {
-        public string KeyPrefix { get; }
-        public QueryResult<KVPair[]> Result { get; }
-        QueryResult IConsulObservation.Result => Result;
-
-        public KeyRecursiveObservation(string keyPrefix, QueryResult<KVPair[]> result)
-        {
-            KeyPrefix = keyPrefix;
-            Result = result;
-        }
-
-        public IEnumerable<KeyValueNode> ToKeyValueNodes()
-        {
-            if (Result.Response == null)
-                return Enumerable.Empty<KeyValueNode>();
-
-            return Result.Response.Select(p => new KeyValueNode(p.Key, p.Value));
         }
     }
 }
