@@ -24,7 +24,7 @@ namespace ConsulTemplate.UnitTests
         }
 
         [Fact]
-        public void RequiredServicesAreObserved()
+        public void ServicesAreObserved()
         {
             _templateDependencies.Services.Add("myservice1");
             CreateProcessor();
@@ -33,7 +33,7 @@ namespace ConsulTemplate.UnitTests
         }
         
         [Fact]
-        public void RequiredKeysAreObserved()
+        public void KeysAreObserved()
         {
             _templateDependencies.Keys.Add("mykey1");
             CreateProcessor();
@@ -42,7 +42,7 @@ namespace ConsulTemplate.UnitTests
         }
 
         [Fact]
-        public void KeyPrefixesAreObserved()
+        public void KeysRecursiveAreObserved()
         {
             _templateDependencies.KeyPrefixes.Add("mykey1");
             CreateProcessor();
@@ -142,6 +142,24 @@ namespace ConsulTemplate.UnitTests
             _consul.Keys.OnNext(CreateKeyObservation("mykey1"));
             VerifyRenderIsCalled(Times.Once());
             processor.ConsulState.KVStore.Should().Contain(p => p.FullKey == "mykey1");
+        }
+
+        [Fact]
+        public void ServerErrorRetrievingKeyRecursiveWillBlockTemplateRenderingUntilResolved()
+        {
+            _templateDependencies.KeyPrefixes.Add("mykeyprefix1");
+            var processor = CreateProcessor();
+            _consul.KeysRecursive.OnNext(new KeyRecursiveObservation("mykeyprefix1", new QueryResult<KVPair[]>
+            {
+                StatusCode = HttpStatusCode.InternalServerError
+            }));
+            VerifyRenderIsCalled(Times.Never());
+            processor.ConsulState.KVStore.Should().NotContain(s => s.FullKey.StartsWith("mykeyprefix1"));
+
+            //resolve error
+            _consul.KeysRecursive.OnNext(CreateKeyRecursiveObservation("mykeyprefix1"));
+            VerifyRenderIsCalled(Times.Once());
+            processor.ConsulState.KVStore.Should().Contain(k => k.FullKey.StartsWith("mykeyprefix1/"));
         }
 
         private void VerifyRenderIsCalled(Times times)

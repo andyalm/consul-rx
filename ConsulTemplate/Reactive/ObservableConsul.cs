@@ -9,11 +9,11 @@ namespace ConsulTemplate.Reactive
 {
     public class ObservableConsul : IObservableConsul
     {
-        private readonly ConsulClient _client;
+        private readonly IConsulClient _client;
         private readonly TimeSpan? _longPollMaxWait;
         private readonly string _aclToken; 
 
-        public ObservableConsul(ConsulClient client, TimeSpan? longPollMaxWait = null, string aclToken = null)
+        public ObservableConsul(IConsulClient client, TimeSpan? longPollMaxWait = null, string aclToken = null)
         {
             _client = client;
             _longPollMaxWait = longPollMaxWait;
