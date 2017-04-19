@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using ConsulTemplate.Reactive;
 using Microsoft.Extensions.Configuration;
@@ -10,8 +11,8 @@ namespace ConsulTemplate
         static void Main(string[] args)
         {
             var config = new ConfigurationBuilder()
-                .AddInMemoryCollection(new[] { new KeyValuePair<string, string>("foo", "bar")}) //avoid complaining about no configuration source
-                .AddYamlFile("development.yml", optional: false)
+                .AddYamlFile("development.yml", optional: true)
+                .AddCommandLine(args, SwitchMappings)
                 .Build();
 
             var client = new ObservableConsul(config.GetSection("consul").Get<ObservableConsulConfiguration>());
@@ -20,6 +21,16 @@ namespace ConsulTemplate
             {
                 Thread.Sleep(-1);
             }
-        }     
+        }
+
+        private static readonly IDictionary<string,string> SwitchMappings = new Dictionary<string, string>
+        {
+            {"-e","consul:endpoint"},
+            {"--endpoint", "consul:endpoint"},
+            {"-dc", "consul:datacenter"},
+            {"--datacenter", "consul:datacenter"},
+            {"-w", "consul:longPollMaxWait"},
+            {"--max-wait", "consul:longPollMaxWait"}
+        };
     }
 }
