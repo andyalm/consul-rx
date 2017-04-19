@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp1.1</TargetFramework>
+    <OutputType>ClassLibrary</OutputType>
     <AssemblyName>ConsulTemplate.UnitTests</AssemblyName>
     <IsPackable>false</IsPackable>
     <RootNamespace>ConsulTemplate.UnitTests</RootNamespace>
@@ -17,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ConsulTemplate\ConsulTemplate.csproj" />
+    <ProjectReference Include="..\Core\ConsulTemplate.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

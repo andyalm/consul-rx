@@ -11,7 +11,7 @@ namespace ConsulTemplate
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new[] { new KeyValuePair<string, string>("foo", "bar")}) //avoid complaining about no configuration source
-                .AddYamlFile("development.yml", optional: true)
+                .AddYamlFile("development.yml", optional: false)
                 .Build();
 
             var client = new ObservableConsul(config.GetSection("consul").Get<ObservableConsulConfiguration>());

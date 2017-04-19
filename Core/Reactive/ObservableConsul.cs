@@ -22,6 +22,9 @@ namespace ConsulTemplate.Reactive
 
         public ObservableConsul(ObservableConsulConfiguration config)
         {
+            if(config == null)
+                throw new ArgumentNullException("config");
+
             _client = new ConsulClient(c =>
             {
                 c.Address = new Uri(config.Endpoint ?? "http://localhost:8500");
