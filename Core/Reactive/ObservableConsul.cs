@@ -23,13 +23,12 @@ namespace ConsulTemplate.Reactive
         public ObservableConsul(ObservableConsulConfiguration config)
         {
             if(config == null)
-                throw new ArgumentNullException("config");
+                throw new ArgumentNullException(nameof(config));
 
             _client = new ConsulClient(c =>
             {
                 c.Address = new Uri(config.Endpoint ?? "http://localhost:8500");
                 c.Datacenter = config.Datacenter;
-                c.Token = config.GossipToken;
             });
             _longPollMaxWait = config.LongPollMaxWait;
             _aclToken = config.AclToken;
