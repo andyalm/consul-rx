@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard1.5</TargetFramework>
-    <RootNamespace>ConsulTemplate</RootNamespace>
+    <RootNamespace>ConsulRazor</RootNamespace>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <PackageId>ConsulTemplate.Core</PackageId>
+    <PackageId>ConsulRazor.Core</PackageId>
     <Version>0.1.0-alpha</Version>
     <Authors>Andy Alm</Authors>
     <Description>.NET API for executing templates that plug into Consul values and automatically update when consul values change.</Description>
