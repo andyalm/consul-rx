@@ -24,6 +24,7 @@ namespace ConsulTemplate
             var help = app.HelpOption("-h|--help");
             var consulEndpoint = app.Option("-e|--consul-endpoint", "The HTTP endpoint for consul", CommandOptionType.SingleValue);
             var templatePath = app.Option("-t|--template", "The path to the template", CommandOptionType.SingleValue);
+            var aclToken = app.Option("-a|--acl-token", "The ACL token used when reading from the KV store", CommandOptionType.SingleValue);
             app.OnExecute(() =>
             {
                 if (help.HasValue())
@@ -33,15 +34,17 @@ namespace ConsulTemplate
                 }
 
                 if (consulEndpoint.HasValue())
-                {
                     consulConfig.Endpoint = consulEndpoint.Value();
-                }
+                if (aclToken.HasValue())
+                    consulConfig.AclToken = aclToken.Value();
 
                 var template = templatePath.HasValue() ? templatePath.Value() : "example.yml.razor";
 
-                var client = new ObservableConsul(consulConfig);
+                var templateProcessor = new TemplateProcessorBuilder(template)
+                    .ConsulConfiguration(consulConfig)
+                    .Build();
 
-                using (TemplateProcessor.ForRazorTemplate(template, client))
+                using (templateProcessor)
                 {
                     Thread.Sleep(-1);
                 }
@@ -51,15 +54,5 @@ namespace ConsulTemplate
 
             return app.Execute(args);
         }
-
-        private static readonly IDictionary<string,string> SwitchMappings = new Dictionary<string, string>
-        {
-            {"-e","consul:endpoint"},
-            {"--endpoint", "consul:endpoint"},
-            {"-dc", "consul:datacenter"},
-            {"--datacenter", "consul:datacenter"},
-            {"-w", "consul:longPollMaxWait"},
-            {"--max-wait", "consul:longPollMaxWait"}
-        };
     }
 }

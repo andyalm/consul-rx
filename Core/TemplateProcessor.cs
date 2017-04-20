@@ -46,20 +46,6 @@ namespace ConsulTemplate
                 .Subscribe(item => HandleConsulObservable(item, subscribe)));
         }
 
-        public static TemplateProcessor ForRazorTemplate(string templatePath, IObservableConsul client)
-        {
-            var renderer = new RazorTemplateRenderer(new [] {templatePath});
-
-            return new TemplateProcessor(renderer, client, templatePath);
-        }
-
-        public static IEnumerable<TemplateProcessor> ForRazorTemplates(IEnumerable<string> templatePaths, IObservableConsul client)
-        {
-            var renderer = new RazorTemplateRenderer(templatePaths);
-
-            return templatePaths.Select(p => new TemplateProcessor(renderer, client, p)).ToArray();
-        }
-
         private void RenderTemplate()
         {
             if (ConsulState.SatisfiesAll(_templateDependencies))

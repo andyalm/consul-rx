@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Text.RegularExpressions;
+using System.Threading;
 using ConsulTemplate.Reactive;
 using Microsoft.AspNetCore.Razor;
 using Microsoft.CodeAnalysis;
@@ -15,22 +16,36 @@ namespace ConsulTemplate.Templating
 {
     public class RazorTemplateRenderer : ITemplateRenderer
     {
-        private readonly Assembly _templateAssembly;
+        private readonly Lazy<Assembly> _templateAssembly;
         private readonly IDictionary<string, TemplateMetadata> _templateMetadata;
+        private Type _baseClass = typeof(ConsulTemplateBase);
+        private Action<ConsulTemplateBase> _configureTemplate = _ => {};
 
         public RazorTemplateRenderer(IEnumerable<string> templatePaths)
         {
             _templateMetadata = templatePaths.Select(t => new TemplateMetadata(Path.GetFullPath(t))).ToDictionary(m => m.FullPath);
-            
-            var metadataReferences = typeof(ConsulTemplateBase).GetTypeInfo().Assembly
+            _templateAssembly = new Lazy<Assembly>(CompileAssembly, LazyThreadSafetyMode.ExecutionAndPublication);
+        }
+
+        public void UseBaseClass<T>(Action<T> configure) where T : ConsulTemplateBase
+        {
+            _baseClass = typeof(T);
+            _configureTemplate = t => configure((T) t);
+        }
+
+        private Assembly CompileAssembly()
+        {
+            var metadataReferences = typeof(ConsulTemplateBase).GetTypeInfo()
+                .Assembly
                 .GetReferencedAssemblies()
                 .Select(Assembly.Load)
-                .Concat(new[] { typeof(ConsulTemplateBase).GetTypeInfo().Assembly })
+                .Concat(new[] {typeof(ConsulTemplateBase).GetTypeInfo().Assembly})
                 .Select(assembly => assembly.Location)
                 .Select(location => MetadataReference.CreateFromFile(location))
-                .Concat(new []
+                .Concat(new[]
                 {
-                    MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(typeof(Enumerable).GetTypeInfo().Assembly.Location), "mscorlib.dll")),
+                    MetadataReference.CreateFromFile(Path.Combine(
+                        Path.GetDirectoryName(typeof(Enumerable).GetTypeInfo().Assembly.Location), "mscorlib.dll")),
                     MetadataReference.CreateFromFile(typeof(object).GetTypeInfo().Assembly.Location)
                 })
                 .ToArray();
@@ -38,7 +53,7 @@ namespace ConsulTemplate.Templating
             var language = new CSharpRazorCodeLanguage();
             var host = new RazorEngineHost(language)
             {
-                DefaultBaseClass = "ConsulTemplate.Templating.ConsulTemplateBase",
+                DefaultBaseClass = _baseClass.FullName,
                 DefaultNamespace = "ConsulTemplate.CompiledRazorTemplates",
             };
 
@@ -47,20 +62,21 @@ namespace ConsulTemplate.Templating
             host.NamespaceImports.Add("System.Linq");
             var engine = new RazorTemplateEngine(host);
             var syntaxTrees = _templateMetadata.Values.Select(metadata =>
-            {
-                using (var templateStream = File.OpenRead(metadata.FullPath))
                 {
-                    var generatorResults = engine.GenerateCode(new StreamReader(templateStream), metadata.ClassName,
-                        metadata.Namespace, metadata.Filename);
+                    using (var templateStream = File.OpenRead(metadata.FullPath))
+                    {
+                        var generatorResults = engine.GenerateCode(new StreamReader(templateStream), metadata.ClassName,
+                            metadata.Namespace, metadata.Filename);
 
-                    return CSharpSyntaxTree.ParseText(generatorResults.GeneratedCode);
-                }
-            }).ToArray();
+                        return CSharpSyntaxTree.ParseText(generatorResults.GeneratedCode);
+                    }
+                })
+                .ToArray();
 
             var compilation = CSharpCompilation.Create("ConsulTemplate.CompiledRazorTemplates", syntaxTrees,
                 metadataReferences, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
-            _templateAssembly = Compile(compilation);
+            return Compile(compilation);
         }
 
         public TemplateDependencies AnalyzeDependencies(string templatePath)
@@ -80,9 +96,12 @@ namespace ConsulTemplate.Templating
 
         private ConsulTemplateBase CreateTemplateInstance(string typeName)
         {
-            var templateType = _templateAssembly.GetType(typeName,
+            var templateType = _templateAssembly.Value.GetType(typeName,
                 throwOnError: true);
-            return (ConsulTemplateBase) Activator.CreateInstance(templateType);
+            var instance = (ConsulTemplateBase) Activator.CreateInstance(templateType);
+            _configureTemplate(instance);
+
+            return instance;
         }
 
         private Assembly Compile(CSharpCompilation compilation)
