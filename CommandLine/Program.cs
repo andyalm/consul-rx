@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading;
-using ConsulTemplate.Reactive;
+﻿using System.Threading;
+using ConsulRazor.Reactive;
 using Microsoft.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Configuration;
 
-namespace ConsulTemplate
+namespace ConsulRazor.CommandLine
 {
     class Program
     {

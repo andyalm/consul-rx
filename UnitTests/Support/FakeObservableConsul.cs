@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reactive.Subjects;
-using Consul;
-using ConsulTemplate.Reactive;
+using ConsulRazor.Reactive;
 
-namespace ConsulTemplate.UnitTests.Support
+namespace ConsulRazor.UnitTests.Support
 {
     public class FakeObservableConsul : IObservableConsul
     {

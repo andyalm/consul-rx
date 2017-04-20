@@ -1,7 +1,7 @@
 ﻿using System.IO;
-using ConsulTemplate.Reactive;
+using ConsulRazor.Reactive;
 
-namespace ConsulTemplate.Templating
+namespace ConsulRazor.Templating
 {
     public interface ITemplateRenderer
     {

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Consul;
 
-namespace ConsulTemplate.Reactive
+namespace ConsulRazor.Reactive
 {
     public class KeyRecursiveObservation : IConsulObservation
     {

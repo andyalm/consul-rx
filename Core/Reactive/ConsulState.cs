@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
-using ConsulTemplate.Templating;
+using ConsulRazor.Templating;
 
-namespace ConsulTemplate.Reactive
+namespace ConsulRazor.Reactive
 {
     public class ConsulState
     {

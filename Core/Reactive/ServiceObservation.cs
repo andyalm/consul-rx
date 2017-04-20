@@ -1,9 +1,7 @@
-﻿using System;
-using System.Linq;
-using System.Net;
+﻿using System.Linq;
 using Consul;
 
-namespace ConsulTemplate.Reactive
+namespace ConsulRazor.Reactive
 {
     public class ServiceObservation : IConsulObservation
     {

@@ -6,13 +6,13 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.Text.RegularExpressions;
 using System.Threading;
-using ConsulTemplate.Reactive;
+using ConsulRazor.Reactive;
 using Microsoft.AspNetCore.Razor;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 
-namespace ConsulTemplate.Templating
+namespace ConsulRazor.Templating
 {
     public class RazorTemplateRenderer : ITemplateRenderer
     {

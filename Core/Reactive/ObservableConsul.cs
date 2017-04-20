@@ -5,7 +5,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Consul;
 
-namespace ConsulTemplate.Reactive
+namespace ConsulRazor.Reactive
 {
     public class ObservableConsul : IObservableConsul
     {

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Subjects;
 
-namespace ConsulTemplate.Reactive
+namespace ConsulRazor.Reactive
 {
     public class ChangeTrackingCollection<T> : IEnumerable<T>
     {

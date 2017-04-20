@@ -2,9 +2,9 @@
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using ConsulTemplate.Reactive;
+using ConsulRazor.Reactive;
 
-namespace ConsulTemplate.Templating
+namespace ConsulRazor.Templating
 {
     public abstract class ConsulTemplateBase
     {

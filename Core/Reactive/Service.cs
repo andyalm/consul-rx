@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 
-namespace ConsulTemplate.Reactive
+namespace ConsulRazor.Reactive
 {
     public class Service
     {

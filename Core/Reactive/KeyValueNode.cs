@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace ConsulTemplate.Reactive
+namespace ConsulRazor.Reactive
 {
     public class KeyValueNode
     {

@@ -1,16 +1,14 @@
-using System;
 using System.IO;
-using System.Linq;
 using System.Net;
 using Consul;
-using ConsulTemplate.Reactive;
-using ConsulTemplate.Templating;
-using ConsulTemplate.UnitTests.Support;
+using ConsulRazor.Reactive;
+using ConsulRazor.Templating;
+using ConsulRazor.UnitTests.Support;
 using FluentAssertions;
 using Moq;
 using Xunit;
 
-namespace ConsulTemplate.UnitTests
+namespace ConsulRazor.UnitTests
 {
     public class TemplateProcessorSpec
     {

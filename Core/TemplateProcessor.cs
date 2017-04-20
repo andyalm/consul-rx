@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using ConsulTemplate.Reactive;
-using ConsulTemplate.Templating;
+using ConsulRazor.Reactive;
+using ConsulRazor.Templating;
 
-namespace ConsulTemplate
+namespace ConsulRazor
 {
     public class TemplateProcessor : IDisposable
     {

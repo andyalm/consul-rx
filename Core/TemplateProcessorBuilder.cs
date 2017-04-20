@@ -1,8 +1,8 @@
 ﻿using System;
-using ConsulTemplate.Reactive;
-using ConsulTemplate.Templating;
+using ConsulRazor.Reactive;
+using ConsulRazor.Templating;
 
-namespace ConsulTemplate
+namespace ConsulRazor
 {
     public class TemplateProcessorBuilder
     {

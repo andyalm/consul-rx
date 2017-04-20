@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace ConsulTemplate.Templating
+namespace ConsulRazor.Templating
 {
     public class TemplateDependencies
     {
