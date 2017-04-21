@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,17 +14,25 @@ namespace ConsulRazor.Templating
 
         private TemplateDependencies Dependencies { get; set; }
 
+        internal PropertyBag Properties { get; set; }
+
         public abstract Task ExecuteAsync();
+
+        public string TemplatePath { get; internal set; }
 
         private bool AnalysisMode { get; set; }
 
-        public TemplateDependencies AnalyzeDependencies()
+        private ITemplateRenderer Renderer { get; set; }
+
+        public TemplateDependencies AnalyzeDependencies(PropertyBag properties, ITemplateRenderer renderer)
         {
             AnalysisMode = true;
             try
             {
                 Dependencies = new TemplateDependencies();
                 Model = new ConsulState();
+                Properties = properties ?? new PropertyBag();
+                Renderer = renderer;
                 ExecuteAsync().GetAwaiter().GetResult();
 
                 return Dependencies;
@@ -34,10 +43,12 @@ namespace ConsulRazor.Templating
             }
         }
 
-        public void Render(TextWriter writer, ConsulState model)
+        public void Render(TextWriter writer, ConsulState model, ITemplateRenderer renderer, PropertyBag properties)
         {
             Writer = writer;
             Model = model;
+            Renderer = renderer;
+            Properties = properties ?? new PropertyBag();
             ExecuteAsync().GetAwaiter().GetResult();
         }
 
@@ -99,6 +110,33 @@ namespace ConsulRazor.Templating
             }
 
             return Model.KVStore.GetTree(keyPrefix);
+        }
+
+        public string Partial(string name, object args = null)
+        {
+            if (AnalysisMode)
+            {
+                Renderer.AnalyzePartialDependencies(name, TemplatePath, new PropertyBag(args)).CopyTo(Dependencies);
+                return string.Empty;
+            }
+
+            Renderer.RenderPartial(name, TemplatePath, Writer, Model, new PropertyBag(args));
+            return string.Empty;
+        }
+
+        public T Property<T>(string name)
+        {
+            return Properties.Value<T>(name);
+        }
+
+        public override string ToString()
+        {
+            if (!string.IsNullOrWhiteSpace(TemplatePath))
+            {
+                return TemplatePath;
+            }
+
+            return GetType().FullName;
         }
     }
 }
