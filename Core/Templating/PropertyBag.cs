@@ -16,6 +16,11 @@ namespace ConsulRazor.Templating
             }
         }
 
+        public PropertyBag(IDictionary<string, object> properties)
+        {
+            _properties = properties;
+        }
+
         public T Value<T>(string name)
         {
             if (_properties.TryGetValue(name, out var value))

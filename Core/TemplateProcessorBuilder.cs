@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using ConsulRazor.Reactive;
 using ConsulRazor.Templating;
 
@@ -9,6 +10,7 @@ namespace ConsulRazor
         private readonly string _templatePath;
         private ObservableConsulConfiguration _consulConfig = new ObservableConsulConfiguration();
         private RazorTemplateRenderer _renderer;
+        private IDictionary<string, object> _properties;
 
 
         public TemplateProcessorBuilder(string templatePath)
@@ -29,11 +31,17 @@ namespace ConsulRazor
             return this;
         }
 
+        public TemplateProcessorBuilder TemplateProperties(IDictionary<string, object> properties)
+        {
+            _properties = properties;
+            return this;
+        }
+
         public IDisposable Build()
         {
             var consulClient = new ObservableConsul(_consulConfig);
 
-            return new TemplateProcessor(_renderer, consulClient, _templatePath);
+            return new TemplateProcessor(_renderer, consulClient, _templatePath, new PropertyBag(_properties));
         }
     }
 }

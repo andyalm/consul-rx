@@ -18,7 +18,7 @@ namespace ConsulRazor.UnitTests
 
         public TemplateProcessorSpec()
         {
-            _renderer.Setup(r => r.AnalyzeDependencies(It.IsAny<string>())).Returns(_templateDependencies);
+            _renderer.Setup(r => r.AnalyzeDependencies(It.IsAny<string>(), It.IsAny<PropertyBag>())).Returns(_templateDependencies);
         }
 
         [Fact]
@@ -162,7 +162,7 @@ namespace ConsulRazor.UnitTests
 
         private void VerifyRenderIsCalled(Times times)
         {
-            _renderer.Verify(r => r.Render(It.IsAny<string>(), It.IsAny<TextWriter>(), It.IsAny<ConsulState>()), times);
+            _renderer.Verify(r => r.Render(It.IsAny<string>(), It.IsAny<TextWriter>(), It.IsAny<ConsulState>(), It.IsAny<PropertyBag>()), times);
         }
 
         private KeyObservation CreateKeyObservation(string key)
@@ -216,6 +216,6 @@ namespace ConsulRazor.UnitTests
             });
         }
 
-        private TemplateProcessor CreateProcessor() => new TemplateProcessor(_renderer.Object, _consul, "mytemplate.razor");
+        private TemplateProcessor CreateProcessor() => new TemplateProcessor(_renderer.Object, _consul, "mytemplate.razor", new PropertyBag());
     }
 }

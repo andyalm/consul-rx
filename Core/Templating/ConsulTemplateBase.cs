@@ -129,6 +129,11 @@ namespace ConsulRazor.Templating
             return Properties.Value<T>(name);
         }
 
+        public string Property(string name)
+        {
+            return Property<object>(name)?.ToString();
+        }
+
         public override string ToString()
         {
             if (!string.IsNullOrWhiteSpace(TemplatePath))

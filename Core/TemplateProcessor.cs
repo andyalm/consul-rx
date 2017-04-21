@@ -13,14 +13,16 @@ namespace ConsulRazor
         private readonly TemplateDependencies _templateDependencies;
         public ConsulState ConsulState { get; }
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
+        private readonly PropertyBag _properties;
         public string TemplatePath { get; }
 
 
-        public TemplateProcessor(ITemplateRenderer renderer, IObservableConsul client, string templatePath)
+        public TemplateProcessor(ITemplateRenderer renderer, IObservableConsul client, string templatePath, PropertyBag properties = null)
         {
             _renderer = renderer;
             _templateDependencies = renderer.AnalyzeDependencies(templatePath);
             TemplatePath = templatePath;
+            _properties = properties;
 
             ConsulState = new ConsulState();
 
@@ -53,7 +55,7 @@ namespace ConsulRazor
                 try
                 {
                     Console.WriteLine($"Rendering template");
-                    _renderer.Render(TemplatePath, Console.Out, ConsulState);
+                    _renderer.Render(TemplatePath, Console.Out, ConsulState, _properties);
                     Console.WriteLine();
                 }
                 catch (Exception ex)
