@@ -16,7 +16,7 @@ namespace ConsulRazor
         public TemplateProcessorBuilder(string templatePath)
         {
             _templatePath = templatePath;
-            _renderer = new RazorTemplateRenderer(new[] {_templatePath});
+            _renderer = new RazorTemplateRenderer(new[] {_templatePath}, new RazorTemplateCompiler());
         }
 
         public TemplateProcessorBuilder ConsulConfiguration(ObservableConsulConfiguration config)
@@ -28,6 +28,12 @@ namespace ConsulRazor
         public TemplateProcessorBuilder TemplateBaseClass<T>(Action<T> configure) where  T : ConsulTemplateBase
         {
             _renderer.UseBaseClass(configure);
+            return this;
+        }
+
+        public TemplateProcessorBuilder TemplateBaseClass<T>() where  T : ConsulTemplateBase
+        {
+            _renderer.UseBaseClass<T>(_ => {});
             return this;
         }
 

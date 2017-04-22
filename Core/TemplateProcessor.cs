@@ -20,7 +20,7 @@ namespace ConsulRazor
         public TemplateProcessor(ITemplateRenderer renderer, IObservableConsul client, string templatePath, PropertyBag properties = null)
         {
             _renderer = renderer;
-            _templateDependencies = renderer.AnalyzeDependencies(templatePath);
+            _templateDependencies = renderer.AnalyzeDependencies(templatePath, properties);
             TemplatePath = templatePath;
             _properties = properties;
 
@@ -54,7 +54,7 @@ namespace ConsulRazor
             {
                 try
                 {
-                    Console.WriteLine($"Rendering template");
+                    Console.WriteLine($"Rendering template '{TemplatePath}'");
                     _renderer.Render(TemplatePath, Console.Out, ConsulState, _properties);
                     Console.WriteLine();
                 }

@@ -14,7 +14,7 @@ namespace ConsulRazor.Templating
 
         private TemplateDependencies Dependencies { get; set; }
 
-        internal PropertyBag Properties { get; set; }
+        private PropertyBag Properties { get; set; }
 
         public abstract Task ExecuteAsync();
 
