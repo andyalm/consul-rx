@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Consul;
@@ -60,7 +61,7 @@ namespace ConsulRazor.Reactive
             };
         }
 
-        private IObservable<TObservation> LongPoll<TResponse,TObservation>(Func<ulong,Task<QueryResult<TResponse>>> poll, Func<QueryResult<TResponse>,TObservation> toObservation)
+        private IObservable<TObservation> LongPoll<TResponse,TObservation>(Func<ulong,Task<QueryResult<TResponse>>> poll, Func<QueryResult<TResponse>,TObservation> toObservation) where TObservation : class
         {
             ulong index = default(ulong);
             return Observable.FromAsync(async () =>
@@ -70,6 +71,15 @@ namespace ConsulRazor.Reactive
                     var result = await poll(index);
                     index = result.LastIndex;
 
+                    var statusCodeNumber = ((int) result.StatusCode).ToString();
+                    if(statusCodeNumber.StartsWith("5"))
+                    {
+                        //We got a 500 error and will wait 5 seconds and try again
+                        Console.WriteLine($"Got a {statusCodeNumber} response. Will retry in 5 seconds...");
+                        await Task.Delay(TimeSpan.FromSeconds(5));
+                        return (TObservation)null;
+                    }
+                    
                     return toObservation(result);
                 }
                 catch (Exception ex)
@@ -77,7 +87,7 @@ namespace ConsulRazor.Reactive
                     Console.WriteLine(ex);
                     throw;
                 }
-            }).Repeat();
+            }).Repeat().Where(o => o != null);
         }
     }
 

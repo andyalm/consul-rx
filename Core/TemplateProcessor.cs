@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using ConsulRazor.Reactive;
@@ -15,13 +16,15 @@ namespace ConsulRazor
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
         private readonly PropertyBag _properties;
         public string TemplatePath { get; }
+        public string OutputPath { get; }
 
 
-        public TemplateProcessor(ITemplateRenderer renderer, IObservableConsul client, string templatePath, PropertyBag properties = null)
+        public TemplateProcessor(ITemplateRenderer renderer, IObservableConsul client, string templatePath, string outputPath, PropertyBag properties = null)
         {
             _renderer = renderer;
             _templateDependencies = renderer.AnalyzeDependencies(templatePath, properties);
             TemplatePath = templatePath;
+            OutputPath = outputPath;
             _properties = properties;
 
             ConsulState = new ConsulState();
@@ -55,7 +58,10 @@ namespace ConsulRazor
                 try
                 {
                     Console.WriteLine($"Rendering template '{TemplatePath}'");
-                    _renderer.Render(TemplatePath, Console.Out, ConsulState, _properties);
+                    using (var writer = OpenOutput())
+                    {
+                        _renderer.Render(TemplatePath, writer, ConsulState, _properties);
+                    }
                     Console.WriteLine();
                 }
                 catch (Exception ex)
@@ -64,6 +70,16 @@ namespace ConsulRazor
                     throw;
                 }
             }
+        }
+
+        private TextWriter OpenOutput()
+        {
+            if (OutputPath == null || OutputPath.Equals("STDOUT"))
+            {
+                return Console.Out;
+            }
+
+            return new StreamWriter(File.Open(OutputPath, FileMode.Create));
         }
 
         private void HandleConsulObservable<T>(T observation, Action<T> action) where T : IConsulObservation

@@ -216,6 +216,6 @@ namespace ConsulRazor.UnitTests
             });
         }
 
-        private TemplateProcessor CreateProcessor() => new TemplateProcessor(_renderer.Object, _consul, "mytemplate.razor", new PropertyBag());
+        private TemplateProcessor CreateProcessor() => new TemplateProcessor(_renderer.Object, _consul, "mytemplate.razor", null, new PropertyBag());
     }
 }

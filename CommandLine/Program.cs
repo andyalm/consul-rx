@@ -24,7 +24,7 @@ namespace ConsulRazor.CommandLine
             };
             var help = app.HelpOption("-h|--help");
             var consulEndpoint = app.Option("-e|--consul-endpoint", "The HTTP endpoint for consul", CommandOptionType.SingleValue);
-            var templatePath = app.Option("-t|--template", "The path to the template", CommandOptionType.SingleValue);
+            var templatePath = app.Option("-t|--template", "The path to the template and the path to the output (delimited by a colon)", CommandOptionType.SingleValue);
             var aclToken = app.Option("-a|--acl-token", "The ACL token used when reading from the KV store", CommandOptionType.SingleValue);
             var properties = app.Option("-p|--properties",
                 "The template properties to pass to the templates in the format name=value",
@@ -42,9 +42,9 @@ namespace ConsulRazor.CommandLine
                 if (aclToken.HasValue())
                     consulConfig.AclToken = aclToken.Value();
 
-                var template = templatePath.HasValue() ? templatePath.Value() : "example.yml.razor";
+                var template = ParseTemplatePath(templatePath, out var outputPath);
 
-                var templateProcessor = new TemplateProcessorBuilder(template)
+                var templateProcessor = new TemplateProcessorBuilder(template, outputPath)
                     .ConsulConfiguration(consulConfig)
                     .TemplateProperties(ParseProperties(properties.Values))
                     .Build();
@@ -58,6 +58,18 @@ namespace ConsulRazor.CommandLine
             });
 
             return app.Execute(args);
+        }
+
+        private static string ParseTemplatePath(CommandOption templateArg, out string outputPath)
+        {
+            outputPath = null;
+            if (!templateArg.HasValue())
+                return "example.yml.razor";
+
+            var args = templateArg.Value().Split(':');
+            if (args.Length > 1)
+                outputPath = args[1];
+            return args[0];
         }
 
         private static IDictionary<string,object> ParseProperties(IEnumerable<string> args)

@@ -78,7 +78,8 @@ namespace ConsulRazor.Templating
 
                     foreach (var diagnostic in failures)
                     {
-                        Console.Error.WriteLine("{0}: {1}", diagnostic.Id, diagnostic.GetMessage());
+                        Console.Error.WriteLine($"{diagnostic.Id}: {diagnostic.GetMessage()}");
+                        Console.Error.WriteLine(diagnostic.Location.SourceTree);
                     }
 
                     throw new TemplateCompilationException(failures);

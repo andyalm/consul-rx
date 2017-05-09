@@ -8,14 +8,16 @@ namespace ConsulRazor
     public class TemplateProcessorBuilder
     {
         private readonly string _templatePath;
+        private readonly string _outputPath;
         private ObservableConsulConfiguration _consulConfig = new ObservableConsulConfiguration();
-        private RazorTemplateRenderer _renderer;
+        private readonly RazorTemplateRenderer _renderer;
         private IDictionary<string, object> _properties;
 
 
-        public TemplateProcessorBuilder(string templatePath)
+        public TemplateProcessorBuilder(string templatePath, string outputPath = null)
         {
             _templatePath = templatePath;
+            _outputPath = outputPath;
             _renderer = new RazorTemplateRenderer(new[] {_templatePath}, new RazorTemplateCompiler());
         }
 
@@ -47,7 +49,7 @@ namespace ConsulRazor
         {
             var consulClient = new ObservableConsul(_consulConfig);
 
-            return new TemplateProcessor(_renderer, consulClient, _templatePath, new PropertyBag(_properties));
+            return new TemplateProcessor(_renderer, consulClient, _templatePath, _outputPath, new PropertyBag(_properties));
         }
     }
 }
