@@ -11,9 +11,9 @@ namespace ConsulRazor
     public class TemplateProcessor : IDisposable
     {
         private readonly ITemplateRenderer _renderer;
-        private readonly TemplateDependencies _templateDependencies;
+        private readonly ConsulDependencies _consulDependencies;
         public ConsulState ConsulState { get; }
-        private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
+        private readonly IDisposable _subscriptions;
         private readonly PropertyBag _properties;
         public string TemplatePath { get; }
         public string OutputPath { get; }
@@ -22,38 +22,20 @@ namespace ConsulRazor
         public TemplateProcessor(ITemplateRenderer renderer, IObservableConsul client, string templatePath, string outputPath, PropertyBag properties = null)
         {
             _renderer = renderer;
-            _templateDependencies = renderer.AnalyzeDependencies(templatePath, properties);
+            _consulDependencies = renderer.AnalyzeDependencies(templatePath, properties);
             TemplatePath = templatePath;
             OutputPath = outputPath;
             _properties = properties;
 
             ConsulState = new ConsulState();
+            _subscriptions = ConsulState.ObserveAll(_consulDependencies, client);
 
-            Observe(() => client.ObserveServices(_templateDependencies.Services),
-                services => ConsulState.UpdateService(services.ToService()));
-            Observe(() => client.ObserveKeys(_templateDependencies.Keys),
-                kv => ConsulState.UpdateKVNode(kv.ToKeyValueNode()));
-            Observe(() => client.ObserveKeysRecursive(_templateDependencies.KeyPrefixes),
-                kv =>
-                {
-                    if (kv.Result.Response == null || !kv.Result.Response.Any())
-                        ConsulState.MarkKeyPrefixAsMissingOrEmpty(kv.KeyPrefix);
-                    else
-                        ConsulState.UpdateKVNodes(kv.ToKeyValueNodes());
-                });
-
-            _subscriptions.Add(ConsulState.Changes.Subscribe(_ => RenderTemplate()));
-        }
-
-        private void Observe<T>(Func<IObservable<T>> getObservable, Action<T> subscribe) where T : IConsulObservation
-        {
-            _subscriptions.Add(getObservable()
-                .Subscribe(item => HandleConsulObservable(item, subscribe)));
+            ConsulState.Changes.Subscribe(_ => RenderTemplate());
         }
 
         private void RenderTemplate()
         {
-            if (ConsulState.SatisfiesAll(_templateDependencies))
+            if (ConsulState.SatisfiesAll(_consulDependencies))
             {
                 try
                 {
@@ -80,35 +62,11 @@ namespace ConsulRazor
             }
 
             return new StreamWriter(File.Open(OutputPath, FileMode.Create));
-        }
-
-        private void HandleConsulObservable<T>(T observation, Action<T> action) where T : IConsulObservation
-        {
-            if (observation.Result.StatusCode == HttpStatusCode.OK ||
-                observation.Result.StatusCode == HttpStatusCode.NotFound)
-            {
-                try
-                {
-                    action(observation);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex);
-                    throw;
-                }
-            }
-            else
-            {
-                Console.WriteLine($"Error retrieving something: {observation.Result.StatusCode}");
-            }
-        }
+        }    
 
         public void Dispose()
         {
-            foreach (var subscription in _subscriptions)
-            {
-                subscription.Dispose();
-            }
+            _subscriptions.Dispose();
         }
     }
 }

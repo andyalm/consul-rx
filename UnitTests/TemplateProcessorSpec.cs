@@ -12,19 +12,19 @@ namespace ConsulRazor.UnitTests
 {
     public class TemplateProcessorSpec
     {
-        private readonly TemplateDependencies _templateDependencies = new TemplateDependencies();
+        private readonly ConsulDependencies _consulDependencies = new ConsulDependencies();
         private readonly Mock<ITemplateRenderer> _renderer = new Mock<ITemplateRenderer>();
         private readonly FakeObservableConsul _consul = new FakeObservableConsul();
 
         public TemplateProcessorSpec()
         {
-            _renderer.Setup(r => r.AnalyzeDependencies(It.IsAny<string>(), It.IsAny<PropertyBag>())).Returns(_templateDependencies);
+            _renderer.Setup(r => r.AnalyzeDependencies(It.IsAny<string>(), It.IsAny<PropertyBag>())).Returns(_consulDependencies);
         }
 
         [Fact]
         public void ServicesAreObserved()
         {
-            _templateDependencies.Services.Add("myservice1");
+            _consulDependencies.Services.Add("myservice1");
             CreateProcessor();
             _consul.ObservingServices.Should().HaveCount(1);
             _consul.ObservingServices.Should().Contain("myservice1");
@@ -33,7 +33,7 @@ namespace ConsulRazor.UnitTests
         [Fact]
         public void KeysAreObserved()
         {
-            _templateDependencies.Keys.Add("mykey1");
+            _consulDependencies.Keys.Add("mykey1");
             CreateProcessor();
             _consul.ObservingKeys.Should().HaveCount(1);
             _consul.ObservingKeys.Should().Contain("mykey1");
@@ -42,7 +42,7 @@ namespace ConsulRazor.UnitTests
         [Fact]
         public void KeysRecursiveAreObserved()
         {
-            _templateDependencies.KeyPrefixes.Add("mykey1");
+            _consulDependencies.KeyPrefixes.Add("mykey1");
             CreateProcessor();
             _consul.ObservingKeyPrefixes.Should().HaveCount(1);
             _consul.ObservingKeyPrefixes.Should().Contain("mykey1");
@@ -51,10 +51,10 @@ namespace ConsulRazor.UnitTests
         [Fact]
         public void TemplateIsNotRenderedUntilAllDependenciesHaveResponded()
         {
-            _templateDependencies.Services.Add("myservice1");
-            _templateDependencies.Services.Add("myservice2");
-            _templateDependencies.Keys.Add("mykey1");
-            _templateDependencies.KeyPrefixes.Add("mykeyprefix1");
+            _consulDependencies.Services.Add("myservice1");
+            _consulDependencies.Services.Add("myservice2");
+            _consulDependencies.Keys.Add("mykey1");
+            _consulDependencies.KeyPrefixes.Add("mykeyprefix1");
             CreateProcessor();
             VerifyRenderIsCalled(Times.Never());
             _consul.Keys.OnNext(CreateKeyObservation("mykey1"));
@@ -70,7 +70,7 @@ namespace ConsulRazor.UnitTests
         [Fact]
         public void NotFoundErrorRetrievingServiceWillResultInEmptyServiceRecord()
         {
-            _templateDependencies.Services.Add("missingservice1");
+            _consulDependencies.Services.Add("missingservice1");
             var processor = CreateProcessor();
             _consul.Services.OnNext(new ServiceObservation("missingservice1", new QueryResult<CatalogService[]>
             {
@@ -83,7 +83,7 @@ namespace ConsulRazor.UnitTests
         [Fact]
         public void NotFoundErrorRetrievingKeyWillResultInEmptyKeyRecordAndAllowTemplateToRender()
         {
-            _templateDependencies.Keys.Add("missingkey1");
+            _consulDependencies.Keys.Add("missingkey1");
             var processor = CreateProcessor();
             _consul.Keys.OnNext(new KeyObservation("missingkey1", new QueryResult<KVPair>
             {
@@ -96,7 +96,7 @@ namespace ConsulRazor.UnitTests
         [Fact]
         public void NotFoundErrorRetrievingKeyPrefixWillStillAllowTemplateToBeRendered()
         {
-            _templateDependencies.KeyPrefixes.Add("mykeyprefix1");
+            _consulDependencies.KeyPrefixes.Add("mykeyprefix1");
             var processor = CreateProcessor();
             _consul.KeysRecursive.OnNext(new KeyRecursiveObservation("mykeyprefix1", new QueryResult<KVPair[]>
             {
@@ -109,7 +109,7 @@ namespace ConsulRazor.UnitTests
         [Fact]
         public void ServerErrorRetrievingServiceWillBlockTemplateRenderingUntilResolved()
         {
-            _templateDependencies.Services.Add("myservice1");
+            _consulDependencies.Services.Add("myservice1");
             var processor = CreateProcessor();
             _consul.Services.OnNext(new ServiceObservation("myservice1", new QueryResult<CatalogService[]>
             {
@@ -127,7 +127,7 @@ namespace ConsulRazor.UnitTests
         [Fact]
         public void ServerErrorRetrievingKeyWillBlockTemplateRenderingUntilResolved()
         {
-            _templateDependencies.Keys.Add("mykey1");
+            _consulDependencies.Keys.Add("mykey1");
             var processor = CreateProcessor();
             _consul.Keys.OnNext(new KeyObservation("mykey1", new QueryResult<KVPair>
             {
@@ -145,7 +145,7 @@ namespace ConsulRazor.UnitTests
         [Fact]
         public void ServerErrorRetrievingKeyRecursiveWillBlockTemplateRenderingUntilResolved()
         {
-            _templateDependencies.KeyPrefixes.Add("mykeyprefix1");
+            _consulDependencies.KeyPrefixes.Add("mykeyprefix1");
             var processor = CreateProcessor();
             _consul.KeysRecursive.OnNext(new KeyRecursiveObservation("mykeyprefix1", new QueryResult<KVPair[]>
             {

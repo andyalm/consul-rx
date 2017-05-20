@@ -46,14 +46,14 @@ namespace ConsulRazor.Templating
             _configureTemplate = t => configure((T) t);
         }
 
-        public TemplateDependencies AnalyzeDependencies(string templatePath, PropertyBag properties = null)
+        public ConsulDependencies AnalyzeDependencies(string templatePath, PropertyBag properties = null)
         {
             var metadata = GetTemplateMetadata(templatePath);
             var instance = CreateTemplateInstance(metadata.FullTypeName, templatePath);
             return instance.AnalyzeDependencies(properties, this);
         }
 
-        public TemplateDependencies AnalyzePartialDependencies(string name, string parentTemplatePath, PropertyBag properties)
+        public ConsulDependencies AnalyzePartialDependencies(string name, string parentTemplatePath, PropertyBag properties)
         {
             var templatePath = ResolvePartial(name, parentTemplatePath);
             return AnalyzeDependencies(templatePath, properties);

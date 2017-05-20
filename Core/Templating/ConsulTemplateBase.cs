@@ -12,7 +12,7 @@ namespace ConsulRazor.Templating
         private ConsulState Model { get; set; }
         private TextWriter Writer { get; set; }
 
-        private TemplateDependencies Dependencies { get; set; }
+        private ConsulDependencies Dependencies { get; set; }
 
         private PropertyBag Properties { get; set; }
 
@@ -24,12 +24,12 @@ namespace ConsulRazor.Templating
 
         private ITemplateRenderer Renderer { get; set; }
 
-        public TemplateDependencies AnalyzeDependencies(PropertyBag properties, ITemplateRenderer renderer)
+        public ConsulDependencies AnalyzeDependencies(PropertyBag properties, ITemplateRenderer renderer)
         {
             AnalysisMode = true;
             try
             {
-                Dependencies = new TemplateDependencies();
+                Dependencies = new ConsulDependencies();
                 Model = new ConsulState();
                 Properties = properties ?? new PropertyBag();
                 Renderer = renderer;
