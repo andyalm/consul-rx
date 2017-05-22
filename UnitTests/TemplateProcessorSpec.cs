@@ -116,7 +116,6 @@ namespace ConsulRazor.UnitTests
                 StatusCode = HttpStatusCode.InternalServerError
             }));
             VerifyRenderIsCalled(Times.Never());
-            processor.ConsulState.Services.Should().NotContain(s => s.Name == "myservice1");
 
             //resolve error
             _consul.Services.OnNext(CreateServiceObservation("myservice1"));
@@ -134,7 +133,6 @@ namespace ConsulRazor.UnitTests
                 StatusCode = HttpStatusCode.InternalServerError
             }));
             VerifyRenderIsCalled(Times.Never());
-            processor.ConsulState.KVStore.Should().NotContain(s => s.FullKey == "mykey1");
 
             //resolve error
             _consul.Keys.OnNext(CreateKeyObservation("mykey1"));
@@ -152,7 +150,6 @@ namespace ConsulRazor.UnitTests
                 StatusCode = HttpStatusCode.InternalServerError
             }));
             VerifyRenderIsCalled(Times.Never());
-            processor.ConsulState.KVStore.Should().NotContain(s => s.FullKey.StartsWith("mykeyprefix1"));
 
             //resolve error
             _consul.KeysRecursive.OnNext(CreateKeyRecursiveObservation("mykeyprefix1"));

@@ -1,16 +1,22 @@
 {
-    "version": "0.2.0",
-    "configurations": [
+   // Use IntelliSense to find out which attributes exist for C# debugging
+   // Use hover for the description of the existing attributes
+   // For further information visit https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md
+   "version": "0.2.0",
+   "configurations": [
         {
             "name": ".NET Core Launch (console)",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceRoot}/ConsulTemplate/bin/Debug/netcoreapp1.1/ConsulTemplate.dll",
-            "args": ["uni-search-http"],
-            "cwd": "${workspaceRoot}",
+            // If you have changed target frameworks, make sure to update the program path.
+            "program": "${workspaceRoot}/CommandLine/bin/Debug/netcoreapp1.1/ConsulRazor.CommandLine.dll",
+            "args": [],
+            "cwd": "${workspaceRoot}/CommandLine",
+            // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
+            "console": "internalConsole",
             "stopAtEntry": false,
-            "console": "internalConsole"
+            "internalConsoleOptions": "openOnSessionStart"
         },
         {
             "name": ".NET Core Attach",

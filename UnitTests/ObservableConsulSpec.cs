@@ -9,6 +9,7 @@ using ConsulRazor.UnitTests.Support;
 using FluentAssertions;
 using Moq;
 using Xunit;
+using System.Threading;
 
 namespace ConsulRazor.UnitTests
 {
@@ -27,11 +28,16 @@ namespace ConsulRazor.UnitTests
         public void ServerErrorDoesNotStreamItem()
         {
             List<ServiceObservation> observations = new List<ServiceObservation>();
-            _observableConsul.ObserveService("MyService").Subscribe(o => observations.Add(o));
+            AutoResetEvent observationSignal = new AutoResetEvent(false);
+            _observableConsul.ObserveService("MyService").Subscribe(o => {
+                observations.Add(o);
+                observationSignal.Set();
+            });
             _consulClient.CompleteService("MyService", new QueryResult<CatalogService[]>
             {
                 StatusCode = HttpStatusCode.InternalServerError
             });
+            observationSignal.WaitOne(100);
             observations.Should().BeEmpty();
         }
 
@@ -39,7 +45,11 @@ namespace ConsulRazor.UnitTests
         public void OkServiceResponseIsStreamed()
         {
             List<ServiceObservation> observations = new List<ServiceObservation>();
-            _observableConsul.ObserveService("MyService").Subscribe(o => observations.Add(o));
+            AutoResetEvent observationSignal = new AutoResetEvent(false);
+            _observableConsul.ObserveService("MyService").Subscribe(o => {
+                observations.Add(o);
+                observationSignal.Set();
+            });
             _consulClient.CompleteService("MyService", new QueryResult<CatalogService[]>
             {
                 StatusCode = HttpStatusCode.OK,
@@ -50,6 +60,7 @@ namespace ConsulRazor.UnitTests
                     }
                 }
             });
+            observationSignal.WaitOne(100);
             observations.Should().HaveCount(1);
             observations[0].ServiceName.Should().Be("MyService");
             observations[0].Result.Response[0].ServiceAddress.Should().Be("10.8.8.3");

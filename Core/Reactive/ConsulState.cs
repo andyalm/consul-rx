@@ -52,34 +52,51 @@ namespace ConsulRazor.Reactive
                    && consulDependencies.KeyPrefixes.All(p => KVStore.Any(k => k.FullKey.StartsWith(p)) || MissingKeyPrefixes.Contains(p));
         }
 
-        public IDisposable ObserveAll(ConsulDependencies dependencies, IObservableConsul client)
+        public void ObserveDependencies(IObservableConsul client, ConsulDependencies dependencies)
         {
-            var subscriptions = new CompositeDisposable();
-            
-            subscriptions.Add(Observe(() => client.ObserveServices(dependencies.Services),
-                services => UpdateService(services.ToService())));
-            
-            subscriptions.Add(Observe(() => client.ObserveKeys(dependencies.Keys),
-                kv => UpdateKVNode(kv.ToKeyValueNode())));
-            
-            subscriptions.Add(Observe(() => client.ObserveKeysRecursive(dependencies.KeyPrefixes),
+            ObserveServices(client, dependencies.Services);
+            ObserveKeys(client, dependencies.Keys);
+            ObserveKeysRecursive(client, dependencies.KeyPrefixes);
+        }
+
+        public void ObserveServices(IObservableConsul client, IEnumerable<string> serviceNames)
+        {
+            Observe(() => client.ObserveServices(serviceNames),
+                services => UpdateService(services.ToService()));
+        }
+
+        public void ObserveKeys(IObservableConsul client, IEnumerable<string> keys)
+        {
+            Observe(() => client.ObserveKeys(keys),
+                kv => UpdateKVNode(kv.ToKeyValueNode()));
+        }
+
+        public void ObserveKeysRecursive(IObservableConsul client, IEnumerable<string> keyPrefixes)
+        {
+            Observe(() => client.ObserveKeysRecursive(keyPrefixes),
                 kv =>
                 {
                     if (kv.Result.Response == null || !kv.Result.Response.Any())
                         MarkKeyPrefixAsMissingOrEmpty(kv.KeyPrefix);
                     else
                         UpdateKVNodes(kv.ToKeyValueNodes());
-                }));
+                });
+        }
 
-            return subscriptions;
-        }
-        
-        private IDisposable Observe<T>(Func<IObservable<T>> getObservable, Action<T> subscribe) where T : IConsulObservation
+        public void Dispose()
         {
-            return getObservable().Subscribe(item => HandleConsulObservable(item, subscribe));
+            foreach (var subscription in _subscriptions)
+            {
+                subscription.Dispose();
+            }
         }
         
-        private void HandleConsulObservable<T>(T observation, Action<T> action) where T : IConsulObservation
+        private void Observe<T>(Func<IObservable<T>> getObservable, Action<T> subscribe) where T : IConsulObservation
+        {
+            _subscriptions.Add(getObservable().Subscribe(item => HandleConsulObservable(item, subscribe)));
+        }
+        
+        private static void HandleConsulObservable<T>(T observation, Action<T> action) where T : IConsulObservation
         {
             if (observation.Result.StatusCode == HttpStatusCode.OK ||
                 observation.Result.StatusCode == HttpStatusCode.NotFound)
@@ -97,14 +114,6 @@ namespace ConsulRazor.Reactive
             else
             {
                 Console.WriteLine($"Error retrieving something: {observation.Result.StatusCode}");
-            }
-        }
-
-        public void Dispose()
-        {
-            foreach (var subscription in _subscriptions)
-            {
-                subscription.Dispose();
             }
         }
     }
