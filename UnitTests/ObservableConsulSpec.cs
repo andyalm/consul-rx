@@ -1,15 +1,12 @@
-﻿using System.Linq;
-using System.Net;
-using System.Reactive.Linq;
+﻿using System.Net;
 using System;
 using System.Collections.Generic;
 using Consul;
-using ConsulRazor.Reactive;
-using ConsulRazor.UnitTests.Support;
 using FluentAssertions;
-using Moq;
 using Xunit;
 using System.Threading;
+using ReactiveConsul;
+using ReactiveConsul.TestSupport;
 
 namespace ConsulRazor.UnitTests
 {

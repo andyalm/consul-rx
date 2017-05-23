@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using ConsulRazor.Reactive;
 using ConsulRazor.Templating;
+using ReactiveConsul;
 
 namespace ConsulRazor
 {

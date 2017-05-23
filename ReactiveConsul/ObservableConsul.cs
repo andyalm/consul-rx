@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Threading.Tasks;
 using Consul;
 
-namespace ConsulRazor.Reactive
+namespace ReactiveConsul
 {
     public class ObservableConsul : IObservableConsul
     {
@@ -49,7 +51,54 @@ namespace ConsulRazor.Reactive
         public IObservable<KeyRecursiveObservation> ObserveKeyRecursive(string prefix)
         {
             return LongPoll(index => _client.KV.List(prefix, QueryOptions(index)), result => new KeyRecursiveObservation(prefix, result));
-        }   
+        }
+
+        public IObservable<ConsulState> ObserveDependencies(ConsulDependencies dependencies)
+        {
+            void Observe<T>(Func<IObservable<T>> getObservable, Action<T> subscribe) where T : IConsulObservation
+            {
+                getObservable().Subscribe(item => HandleConsulObservable(item, subscribe));
+            }
+        
+            void HandleConsulObservable<T>(T observation, Action<T> action) where T : IConsulObservation
+            {
+                if (observation.Result.StatusCode == HttpStatusCode.OK ||
+                    observation.Result.StatusCode == HttpStatusCode.NotFound)
+                {
+                    try
+                    {
+                        action(observation);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex);
+                        throw;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"Error retrieving something: {observation.Result.StatusCode}");
+                }
+            }
+
+            var subject = new Subject<ConsulState>();
+            var consulState = new ConsulState();
+            consulState.Changes.Where(s => s.SatisfiesAll(dependencies)).Subscribe(s => subject.OnNext(s));
+            Observe(() => this.ObserveServices(dependencies.Services),
+                services => consulState.UpdateService(services.ToService()));
+            Observe(() => this.ObserveKeys(dependencies.Keys),
+                kv => consulState.UpdateKVNode(kv.ToKeyValueNode()));
+            Observe(() => this.ObserveKeysRecursive(dependencies.KeyPrefixes),
+                kv =>
+                {
+                    if (kv.Result.Response == null || !kv.Result.Response.Any())
+                        consulState.MarkKeyPrefixAsMissingOrEmpty(kv.KeyPrefix);
+                    else
+                        consulState.UpdateKVNodes(kv.ToKeyValueNodes());
+                });
+
+            return subject;
+        }
 
         private QueryOptions QueryOptions(ulong index)
         {

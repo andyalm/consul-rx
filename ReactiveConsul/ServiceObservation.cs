@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using Consul;
 
-namespace ConsulRazor.Reactive
+namespace ReactiveConsul
 {
     public class ServiceObservation : IConsulObservation
     {

@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Consul;
 
-namespace ConsulRazor.UnitTests.Support
+namespace ReactiveConsul.TestSupport
 {
     public class FakeConsulClient : ICatalogEndpoint, IConsulClient
     {

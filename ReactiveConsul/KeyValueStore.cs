@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace ConsulRazor.Reactive
+namespace ReactiveConsul
 {
     public class KeyValueStore : IEnumerable<KeyValueNode>
     {

@@ -1,5 +1,5 @@
 ﻿using System.IO;
-using ConsulRazor.Reactive;
+using ReactiveConsul;
 
 namespace ConsulRazor.Templating
 {

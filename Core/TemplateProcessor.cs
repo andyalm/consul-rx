@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
-using ConsulRazor.Reactive;
 using ConsulRazor.Templating;
+using ReactiveConsul;
 
 namespace ConsulRazor
 {
@@ -10,6 +10,7 @@ namespace ConsulRazor
         private readonly ITemplateRenderer _renderer;
         public ConsulState ConsulState { get; private set; }
         private readonly PropertyBag _properties;
+        private readonly IDisposable _subscription;
         public string TemplatePath { get; }
         public string OutputPath { get; }
 
@@ -22,11 +23,10 @@ namespace ConsulRazor
             _properties = properties;
             
             var consulDependencies = renderer.AnalyzeDependencies(templatePath, properties);
-            client.ObserveDependencies(consulDependencies).ContinueWith(consulState =>
+            _subscription = client.ObserveDependencies(consulDependencies).Subscribe(consulState =>
             {
-                ConsulState = consulState.Result;
+                ConsulState = consulState;
                 RenderTemplate();
-                ConsulState.Changes.Subscribe(_ => RenderTemplate());
             });
         }
 
@@ -60,7 +60,7 @@ namespace ConsulRazor
 
         public void Dispose()
         {
-            ConsulState?.Dispose();
+            _subscription.Dispose();
         }
     }
 }

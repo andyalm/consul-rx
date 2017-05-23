@@ -3,13 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Loader;
-using System.Text.RegularExpressions;
 using System.Threading;
-using ConsulRazor.Reactive;
-using Microsoft.AspNetCore.Razor;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Emit;
+using ReactiveConsul;
 
 namespace ConsulRazor.Templating
 {

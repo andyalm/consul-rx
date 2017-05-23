@@ -1,6 +1,6 @@
 using System;
 
-namespace ConsulRazor.Reactive
+namespace ReactiveConsul
 {
     public class ObservableConsulConfiguration
     {

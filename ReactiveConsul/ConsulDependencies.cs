@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace ConsulRazor.Reactive
+namespace ReactiveConsul
 {
     public class ConsulDependencies
     {

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace ConsulRazor.Reactive
+namespace ReactiveConsul
 {
     internal class CompositeDisposable : IDisposable
     {

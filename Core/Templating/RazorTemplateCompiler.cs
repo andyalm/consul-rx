@@ -39,7 +39,7 @@ namespace ConsulRazor.Templating
             var host = new RazorEngineHost(language)
             {
                 DefaultBaseClass = baseClass.FullName,
-                DefaultNamespace = "ConsulTemplate.CompiledRazorTemplates",
+                DefaultNamespace = "ConsulRazor.CompiledRazorTemplates",
             };
 
             // Everyone needs the System namespace, right?
@@ -58,7 +58,7 @@ namespace ConsulRazor.Templating
                 })
                 .ToArray();
 
-            var compilation = CSharpCompilation.Create("ConsulTemplate.CompiledRazorTemplates", syntaxTrees,
+            var compilation = CSharpCompilation.Create("ConsulRazor.CompiledRazorTemplates", syntaxTrees,
                 metadataReferences, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
             return CompileCompilation(compilation);

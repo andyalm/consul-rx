@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reactive.Subjects;
-using ConsulRazor.Reactive;
 
-namespace ConsulRazor.UnitTests.Support
+namespace ReactiveConsul.TestSupport
 {
     public class FakeObservableConsul : IObservableConsul
     {
@@ -32,6 +31,16 @@ namespace ConsulRazor.UnitTests.Support
             ObservingKeyPrefixes.Add(prefix);
 
             return KeysRecursive;
+        }
+        
+        public Subject<ConsulState> Dependencies { get; } = new Subject<ConsulState>();
+        public List<ConsulDependencies> ObservingDependencies { get; } = new List<ConsulDependencies>();
+
+        public IObservable<ConsulState> ObserveDependencies(ConsulDependencies dependencies)
+        {
+            ObservingDependencies.Add(dependencies);
+
+            return Dependencies;
         }
     }
 }

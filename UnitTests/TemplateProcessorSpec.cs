@@ -1,11 +1,11 @@
 using System.IO;
 using System.Net;
 using Consul;
-using ConsulRazor.Reactive;
+using ReactiveConsul;
 using ConsulRazor.Templating;
-using ConsulRazor.UnitTests.Support;
 using FluentAssertions;
 using Moq;
+using ReactiveConsul.TestSupport;
 using Xunit;
 
 namespace ConsulRazor.UnitTests

@@ -1,6 +1,6 @@
 using Consul;
 
-namespace ConsulRazor.Reactive
+namespace ReactiveConsul
 {
     public class KeyObservation : IConsulObservation
     {
