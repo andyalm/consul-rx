@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Text.RegularExpressions;
 
-namespace ConsulRx.Templating.Templating
+namespace ConsulRx.Templating
 {
     public class TemplateMetadata
     {

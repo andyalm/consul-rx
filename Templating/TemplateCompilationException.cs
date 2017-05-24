@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.CodeAnalysis;
 
-namespace ConsulRx.Templating.Templating
+namespace ConsulRx.Templating
 {
     public class TemplateCompilationException : Exception
     {

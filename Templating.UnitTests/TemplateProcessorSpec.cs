@@ -1,5 +1,4 @@
 using System.IO;
-using ConsulRx.Templating.Templating;
 using ConsulRx.TestSupport;
 using FluentAssertions;
 using Moq;

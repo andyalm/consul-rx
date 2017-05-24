@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using ConsulRx.Templating.Templating;
 
 namespace ConsulRx.Templating
 {

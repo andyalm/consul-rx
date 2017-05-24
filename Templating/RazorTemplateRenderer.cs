@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 
-namespace ConsulRx.Templating.Templating
+namespace ConsulRx.Templating
 {
     public class RazorTemplateRenderer : ITemplateRenderer
     {

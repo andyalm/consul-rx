@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using ConsulRx.Templating.Templating;
 
 namespace ConsulRx.Templating
 {

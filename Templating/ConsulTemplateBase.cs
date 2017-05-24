@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace ConsulRx.Templating.Templating
+namespace ConsulRx.Templating
 {
     public abstract class ConsulTemplateBase
     {

@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 
-namespace ConsulRx.Templating.Templating
+namespace ConsulRx.Templating
 {
     public interface IRazorTemplateCompiler
     {

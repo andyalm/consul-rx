@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace ConsulRx.Templating.Templating
+namespace ConsulRx.Templating
 {
     public class PropertyBag
     {
