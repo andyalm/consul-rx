@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using Spiffy.Monitoring;
 
 namespace ConsulRx.Templating
 {
@@ -30,19 +31,22 @@ namespace ConsulRx.Templating
 
         private void RenderTemplate()
         {
+            var eventContext = new EventContext("ConsulRx", "RenderTemplate");
             try
             {
-                Console.WriteLine($"Rendering template '{TemplatePath}'");
+                eventContext["TemplatePath"] = TemplatePath;
                 using (var writer = OpenOutput())
                 {
                     _renderer.Render(TemplatePath, writer, ConsulState, _properties);
                 }
-                Console.WriteLine();
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
-                throw;
+                eventContext.IncludeException(ex);
+            }
+            finally
+            {
+                eventContext.Dispose();
             }
         }
 

@@ -23,7 +23,7 @@ namespace ConsulRx.TestSupport
         
         public IEnumerator<T> GetEnumerator()
         {
-            throw new System.NotImplementedException();
+            return _observations.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()

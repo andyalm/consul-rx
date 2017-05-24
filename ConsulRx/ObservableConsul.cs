@@ -6,6 +6,7 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
 using Consul;
+using Spiffy.Monitoring;
 
 namespace ConsulRx
 {
@@ -41,17 +42,29 @@ namespace ConsulRx
         public IObservable<ServiceObservation> ObserveService(string serviceName)
         {
             return LongPoll(index => _client.Catalog.Service(serviceName, null,
-                QueryOptions(index)), result => new ServiceObservation(serviceName, result));
+                QueryOptions(index)), result => new ServiceObservation(serviceName, result),
+                "GetService", new Dictionary<string, object>
+                {
+                    {"ServiceName",serviceName}
+                });
         }
 
         public IObservable<KeyObservation> ObserveKey(string key)
         {
-            return LongPoll(index => _client.KV.Get(key, QueryOptions(index)), result => new KeyObservation(key, result));
+            return LongPoll(index => _client.KV.Get(key, QueryOptions(index)), result => new KeyObservation(key, result),
+                "GetKey", new Dictionary<string, object>
+                {
+                    {"Key", key}
+                });
         }
 
         public IObservable<KeyRecursiveObservation> ObserveKeyRecursive(string prefix)
         {
-            return LongPoll(index => _client.KV.List(prefix, QueryOptions(index)), result => new KeyRecursiveObservation(prefix, result));
+            return LongPoll(index => _client.KV.List(prefix, QueryOptions(index)), result => new KeyRecursiveObservation(prefix, result),
+                "GetKeys", new Dictionary<string, object>
+                {
+                    {"KeyPrefix", prefix}
+                });
         }
 
         public IObservable<ConsulState> ObserveDependencies(ConsulDependencies dependencies)
@@ -68,22 +81,10 @@ namespace ConsulRx
                 if (observation.Result.StatusCode == HttpStatusCode.OK ||
                     observation.Result.StatusCode == HttpStatusCode.NotFound)
                 {
-                    try
+                    lock (updateMutex)
                     {
-                        lock (updateMutex)
-                        {
-                            action(observation);
-                        }
+                        action(observation);
                     }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex);
-                        throw;
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"Error retrieving something: {observation.Result.StatusCode}");
                 }
             }
 
@@ -129,34 +130,42 @@ namespace ConsulRx
             };
         }
 
-        private IObservable<TObservation> LongPoll<TResponse,TObservation>(Func<ulong,Task<QueryResult<TResponse>>> poll, Func<QueryResult<TResponse>,TObservation> toObservation) where TObservation : class
+        private IObservable<TObservation> LongPoll<TResponse,TObservation>(Func<ulong,Task<QueryResult<TResponse>>> poll, Func<QueryResult<TResponse>,TObservation> toObservation, string monitoringOperation, IDictionary<string,object> monitoringProperties) where TObservation : class
         {
             ulong index = default(ulong);
             return Observable.FromAsync(async () =>
             {
+                var eventContext = new EventContext("ConsulRx", monitoringOperation);
+                eventContext["RequestIndex"] = index;
+                eventContext.AddValues(monitoringProperties);
                 try
                 {
                     var result = await poll(index);
                     index = result.LastIndex;
+                    eventContext.IncludeConsulResult(result);
 
                     var statusCodeNumber = ((int) result.StatusCode).ToString();
-                    if(statusCodeNumber.StartsWith("5"))
+                    if (statusCodeNumber.StartsWith("5"))
                     {
-                        //We got a 500 error and will retry
-                        if(_retryDelay != null)
+                        eventContext["SecondsUntilRetry"] = _retryDelay?.Seconds ?? 0;
+                        //We got a 500 error and will want to wait a bit to retry so we don't start slamming Consul
+                        if (_retryDelay != null)
                         {
-                            Console.WriteLine($"Got a {statusCodeNumber} response. Will retry in {_retryDelay.Value.Seconds} seconds...");
                             await Task.Delay(_retryDelay.Value);
                         }
-                        return (TObservation)null;
+                        return (TObservation) null;
                     }
-                    
+
                     return toObservation(result);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex);
+                    eventContext.IncludeException(ex);
                     throw;
+                }
+                finally
+                {
+                    eventContext.Dispose();
                 }
             }).Repeat().Where(o => o != null);
         }

@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Razor;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
+using Spiffy.Monitoring;
 
 namespace ConsulRx.Templating
 {
@@ -67,20 +68,24 @@ namespace ConsulRx.Templating
         private Assembly CompileCompilation(CSharpCompilation compilation)
         {
             using (var ms = new MemoryStream())
+            using (var eventContext = new EventContext("ConsulRx", "CompileRazorTemplates"))
             {
                 EmitResult result = compilation.Emit(ms);
 
+                eventContext["Success"] = result.Success;
                 if (!result.Success)
                 {
                     var failures = result.Diagnostics.Where(diagnostic =>
                         diagnostic.IsWarningAsError ||
                         diagnostic.Severity == DiagnosticSeverity.Error).ToArray();
 
+                    var errorWriter = new StringWriter();
                     foreach (var diagnostic in failures)
                     {
-                        Console.Error.WriteLine($"{diagnostic.Id}: {diagnostic.GetMessage()}");
-                        Console.Error.WriteLine(diagnostic.Location.SourceTree);
+                        errorWriter.WriteLine($"{diagnostic.Id}: {diagnostic.GetMessage()}");
+                        errorWriter.WriteLine(diagnostic.Location.SourceTree);
                     }
+                    eventContext["Diagnostics"] = errorWriter.ToString();
 
                     throw new TemplateCompilationException(failures);
                 }
