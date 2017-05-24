@@ -16,7 +16,7 @@ namespace ConsulRx.Configuration.UnitTests
             source.MapService("myservice1", "serviceEndpoints:v1:myservice");
             
             var consulState = new ConsulState();
-            consulState.Services.TryUpdate(new Service
+            consulState = consulState.UpdateService(new Service
             {
                 Name = "myservice1",
                 Nodes = new[]
@@ -43,7 +43,7 @@ namespace ConsulRx.Configuration.UnitTests
             source.MapService("myservice1", "serviceEndpoints:v1:myservice", new LambdaEndpointBuilder(s => $"http://{s.Nodes.First().Address}"));
             
             var consulState = new ConsulState();
-            consulState.Services.TryUpdate(new Service
+            consulState = consulState.UpdateService(new Service
             {
                 Name = "myservice1",
                 Nodes = new[]

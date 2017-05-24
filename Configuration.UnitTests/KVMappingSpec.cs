@@ -16,7 +16,7 @@ namespace ConsulRx.Configuration.UnitTests
             source.MapKeyPrefix("apps/myapp", "consul");
             
             var consulState = new ConsulState();
-            consulState.KVStore.Update(new[]
+            consulState = consulState.UpdateKVNodes(new[]
             {
                 new KeyValueNode("apps/myapp/folder1/item1", "value1"),
                 new KeyValueNode("apps/myapp/folder1/item2", "value2"),
@@ -37,10 +37,7 @@ namespace ConsulRx.Configuration.UnitTests
             source.MapKey("apps/myapp/myfeature", "consul:afeature");
             
             var consulState = new ConsulState();
-            consulState.KVStore.Update(new[]
-            {
-                new KeyValueNode("apps/myapp/myfeature", "myvalue")
-            });
+            consulState = consulState.UpdateKVNode(new KeyValueNode("apps/myapp/myfeature", "myvalue"));
 
             var configProvider = _consul.LoadConfigProvider(source, consulState);
             

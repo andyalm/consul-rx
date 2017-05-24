@@ -56,6 +56,8 @@ namespace ConsulRx
 
         public IObservable<ConsulState> ObserveDependencies(ConsulDependencies dependencies)
         {
+            var updateMutex = new object();
+            
             void Observe<T>(Func<IObservable<T>> getObservable, Action<T> subscribe) where T : IConsulObservation
             {
                 getObservable().Subscribe(item => HandleConsulObservable(item, subscribe));
@@ -68,7 +70,10 @@ namespace ConsulRx
                 {
                     try
                     {
-                        action(observation);
+                        lock (updateMutex)
+                        {
+                            action(observation);
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -84,21 +89,34 @@ namespace ConsulRx
 
             var subject = new Subject<ConsulState>();
             var consulState = new ConsulState();
-            consulState.Changes.Where(s => s.SatisfiesAll(dependencies)).Subscribe(s => subject.OnNext(s));
             Observe(() => this.ObserveServices(dependencies.Services),
-                services => consulState.UpdateService(services.ToService()));
+                services =>
+                {
+                    consulState = consulState.UpdateService(services.ToService());
+                    subject.OnNext(consulState);
+                });
             Observe(() => this.ObserveKeys(dependencies.Keys),
-                kv => consulState.UpdateKVNode(kv.ToKeyValueNode()));
+                kv =>
+                {
+                    consulState = consulState.UpdateKVNode(kv.ToKeyValueNode());
+                    subject.OnNext(consulState);
+                });
             Observe(() => this.ObserveKeysRecursive(dependencies.KeyPrefixes),
                 kv =>
                 {
                     if (kv.Result.Response == null || !kv.Result.Response.Any())
-                        consulState.MarkKeyPrefixAsMissingOrEmpty(kv.KeyPrefix);
+                    {
+                        consulState = consulState.MarkKeyPrefixAsMissingOrEmpty(kv.KeyPrefix);
+                        subject.OnNext(consulState);
+                    }
                     else
-                        consulState.UpdateKVNodes(kv.ToKeyValueNodes());
+                    {
+                        consulState = consulState.UpdateKVNodes(kv.ToKeyValueNodes());
+                        subject.OnNext(consulState);
+                    }
                 });
 
-            return subject;
+            return subject.Where(s => s.SatisfiesAll(dependencies));
         }
 
         private QueryOptions QueryOptions(ulong index)
@@ -124,10 +142,10 @@ namespace ConsulRx
                     var statusCodeNumber = ((int) result.StatusCode).ToString();
                     if(statusCodeNumber.StartsWith("5"))
                     {
-                        //We got a 500 error and will wait 5 seconds and try again
-                        Console.WriteLine($"Got a {statusCodeNumber} response. Will retry in 5 seconds...");
+                        //We got a 500 error and will retry
                         if(_retryDelay != null)
                         {
+                            Console.WriteLine($"Got a {statusCodeNumber} response. Will retry in {_retryDelay.Value.Seconds} seconds...");
                             await Task.Delay(_retryDelay.Value);
                         }
                         return (TObservation)null;

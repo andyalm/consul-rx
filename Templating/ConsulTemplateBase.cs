@@ -74,7 +74,7 @@ namespace ConsulRx.Templating
                 return Enumerable.Empty<ServiceNode>();
             }
             
-            return Model.Services.Get(serviceName)?.Nodes ?? Enumerable.Empty<ServiceNode>();
+            return Model.GetService(serviceName)?.Nodes ?? Enumerable.Empty<ServiceNode>();
         }
 
         public string Value(string key)

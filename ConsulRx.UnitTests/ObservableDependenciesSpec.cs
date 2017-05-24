@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Threading;
 using Consul;
 using ConsulRx.TestSupport;
 using FluentAssertions;
@@ -15,12 +13,11 @@ namespace ConsulRx.UnitTests
         private readonly ConsulDependencies _consulDependencies = new ConsulDependencies();
         private readonly FakeConsulClient _consulClient = new FakeConsulClient();
         private readonly ObservableConsul _observableConsul;
-        private readonly List<ConsulState> _consulStateObservations = new List<ConsulState>();
+        private readonly ObservationSink<ConsulState> _consulStateObservations = new ObservationSink<ConsulState>();
 
         public ObservableDependenciesSpec()
         {
             _observableConsul = new ObservableConsul(_consulClient);
-            
         }
         
         [Fact]
@@ -141,19 +138,19 @@ namespace ConsulRx.UnitTests
         private void CompleteService(string serviceName, QueryResult<CatalogService[]> result)
         {
             _consulClient.CompleteService(serviceName, result);
-            Thread.Sleep(10);
+            _consulStateObservations.WaitForAdd();
         }
 
         private void CompleteGet(string key, QueryResult<KVPair> result)
         {
             _consulClient.CompleteGet(key, result);
-            Thread.Sleep(10);
+            _consulStateObservations.WaitForAdd();
         }
 
         private void CompleteList(string keyPrefix, QueryResult<KVPair[]> result)
         {
             _consulClient.CompleteList(keyPrefix, result);
-            Thread.Sleep(10);
+            _consulStateObservations.WaitForAdd();
         }
 
         private void StartObserving()

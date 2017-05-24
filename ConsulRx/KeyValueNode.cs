@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Collections.Generic;
+using System.Text;
 
 namespace ConsulRx
 {
@@ -68,6 +69,11 @@ namespace ConsulRx
             {
                 return ((FullKey != null ? FullKey.GetHashCode() : 0) * 397) ^ (Value != null ? Value.GetHashCode() : 0);
             }
+        }
+
+        public KeyValuePair<string, KeyValueNode> ToIndexedPair()
+        {
+            return new KeyValuePair<string, KeyValueNode>(FullKey, this);
         }
     }
 }

@@ -74,8 +74,8 @@ namespace ConsulRx.Configuration
         {
             foreach (var mapping in _serviceConfigMappings)
             {
-                var service = _consulState.Services.Get(mapping.ServiceName);
-                if (service != null)
+                var service = _consulState.GetService(mapping.ServiceName);
+                if(service != null)
                 {
                     var endpoint = mapping.EndpointBuilder.BuildEndpoint(service);
                     data[mapping.ConfigKey] = endpoint;
