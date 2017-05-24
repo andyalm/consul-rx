@@ -12,8 +12,7 @@ In your `Startup.cs` (or equivilent bootstrapping file where you build your conf
 Configuration = new ConfigurationBuilder()
     .AddConsul(c =>
         c.Endpoint("http://myconsulserver:8500") //defaults to localhost if you omit
-         .MapHttpService("mywidgetservice", "serviceEndpoints:widget")
-         .MapHttpService("myauthenticationservice", "serviceEndpoints:authentication")
+         .MapHttpService("mywidgetservice", "serviceEndpoints:widget") //maps the address of the consul service mywidgetservice to the serviceEndpoints:widget config key in IConfiguration
          .MapKeyPrefix("apps/myapp", "consul") //recursively maps all keys underneath apps/myapp to live in equivilent structure under the consul section in IConfiguration
          .MapKey("shared/key1", "key1")
     );
