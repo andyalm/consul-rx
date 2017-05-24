@@ -1,5 +1,5 @@
 # ConsulRx
-A set of libraries for interacting with Hashicorp's Consul from .NET.
+A set of libraries for interacting with Hashicorp's Consul from .NET. These libraries leverage the [Reactive Extensions](https://github.com/Reactive-Extensions/Rx.NET) to allow you to consume Consul values as a stream so your application can react to changes very quickly.
 
 ## ConsulRx.Configuration
 Provides the ability to add config values into the `Microsoft.Extensions.Configuration` framework from Consul's KV Store and Service Catalog.
