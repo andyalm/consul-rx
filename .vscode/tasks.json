@@ -7,7 +7,7 @@
         {
             "taskName": "build",
             "args": [
-                "${workspaceRoot}/CommandLine/ConsulRazor.CommandLine.csproj"
+                "${workspaceRoot}/Templating.CommandLine/ConsulRx.Templating.CommandLine.csproj"
             ],
             "isBuildCommand": true,
             "problemMatcher": "$msCompile"
