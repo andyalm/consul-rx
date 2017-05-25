@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Consul;
+using ConsulRx.UnitTests;
 
 namespace ConsulRx.TestSupport
 {
@@ -11,6 +12,7 @@ namespace ConsulRx.TestSupport
         private readonly Dictionary<string, TaskCompletionSource<QueryResult<CatalogService[]>>> _serviceCalls =
             new Dictionary<string, TaskCompletionSource<QueryResult<CatalogService[]>>>(
                 StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, AsyncAutoResetEvent> _waitingServiceCalls = new Dictionary<string, AsyncAutoResetEvent>(StringComparer.OrdinalIgnoreCase);
         
         public Task<QueryResult<CatalogService[]>> Service(string service, CancellationToken ct = new CancellationToken())
         {
@@ -24,27 +26,39 @@ namespace ConsulRx.TestSupport
 
         public Task<QueryResult<CatalogService[]>> Service(string service, string tag, QueryOptions q, CancellationToken ct = new CancellationToken())
         {
+            if (_waitingServiceCalls.TryGetValue(service, out var waitingEvent))
+            {
+                waitingEvent.Set();
+                _waitingServiceCalls.Remove(service);
+            }
             var completionSource = new TaskCompletionSource<QueryResult<CatalogService[]>>();
             _serviceCalls[service] = completionSource;
 
             return completionSource.Task;
         }
 
-        public void CompleteService(string serviceName, QueryResult<CatalogService[]> result)
+        public async Task CompleteServiceAsync(string serviceName, QueryResult<CatalogService[]> result)
         {
             if (_serviceCalls.TryGetValue(serviceName, out var completionSource))
             {
-                completionSource.SetResult(result);
                 _serviceCalls.Remove(serviceName);
+                completionSource.SetResult(result);
+                await completionSource.Task;
             }
             else
             {
-                throw new InvalidOperationException($"There are not outstanding requests for service '{serviceName}'");
+                var serviceCallResetEvent = new AsyncAutoResetEvent(false);
+                _waitingServiceCalls[serviceName] = serviceCallResetEvent;
+                if (!(await serviceCallResetEvent.WaitAsync(500)))
+                {
+                    throw new InvalidOperationException($"Timed out waiting for a request for service requst '{serviceName}' to be initiated");
+                }
             }
         }
         
         private readonly Dictionary<string, TaskCompletionSource<QueryResult<KVPair>>> _getCalls = new Dictionary<string, TaskCompletionSource<QueryResult<KVPair>>>(StringComparer.OrdinalIgnoreCase);
-        
+        private readonly Dictionary<string, AsyncAutoResetEvent> _waitingGetCalls = new Dictionary<string, AsyncAutoResetEvent>(StringComparer.OrdinalIgnoreCase);
+
         public Task<QueryResult<KVPair>> Get(string key, CancellationToken ct = new CancellationToken())
         {
             return Get(key, null, ct);
@@ -58,21 +72,28 @@ namespace ConsulRx.TestSupport
             return completionSource.Task;
         }
 
-        public void CompleteGet(string key, QueryResult<KVPair> result)
+        public async Task CompleteGetAsync(string key, QueryResult<KVPair> result)
         {
             if (_getCalls.TryGetValue(key, out var completionSource))
             {
-                completionSource.SetResult(result);
                 _getCalls.Remove(key);
+                completionSource.SetResult(result);
+                await completionSource.Task;
             }
             else
             {
-                throw new InvalidOperationException($"There are not outstanding requests for key '{key}'");
+                var serviceCallResetEvent = new AsyncAutoResetEvent(false);
+                _waitingGetCalls[key] = serviceCallResetEvent;
+                if (!(await serviceCallResetEvent.WaitAsync(500)))
+                {
+                    throw new InvalidOperationException($"Timed out waiting for a request for key '{key}' to be initiated");
+                }
             }
         }
         
         private readonly Dictionary<string,TaskCompletionSource<QueryResult<KVPair[]>>> _listCalls = new Dictionary<string, TaskCompletionSource<QueryResult<KVPair[]>>>(StringComparer.OrdinalIgnoreCase);
-        
+        private readonly Dictionary<string, AsyncAutoResetEvent> _waitingListCalls = new Dictionary<string, AsyncAutoResetEvent>(StringComparer.OrdinalIgnoreCase);
+
         public Task<QueryResult<KVPair[]>> List(string prefix, CancellationToken ct = new CancellationToken())
         {
             return List(prefix, null, ct);
@@ -86,16 +107,22 @@ namespace ConsulRx.TestSupport
             return completionSource.Task;
         }
 
-        public void CompleteList(string prefix, QueryResult<KVPair[]> result)
+        public async Task CompleteListAsync(string prefix, QueryResult<KVPair[]> result)
         {
             if (_listCalls.TryGetValue(prefix, out var completionSource))
             {
                 _listCalls.Remove(prefix);
                 completionSource.SetResult(result);
+                await completionSource.Task;
             }
             else
             {
-                throw new InvalidOperationException($"There are no outstanding requests for key prefix '{prefix}'");
+                var serviceCallResetEvent = new AsyncAutoResetEvent(false);
+                _waitingGetCalls[prefix] = serviceCallResetEvent;
+                if (!(await serviceCallResetEvent.WaitAsync(500)))
+                {
+                    throw new InvalidOperationException($"Timed out waiting for a request for key prefix '{prefix}' to be initiated");
+                }
             }
         }
         

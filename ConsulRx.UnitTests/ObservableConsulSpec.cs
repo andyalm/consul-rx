@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 using Consul;
 using ConsulRx.TestSupport;
 using FluentAssertions;
@@ -21,32 +22,27 @@ namespace ConsulRx.UnitTests
         }
 
         [Fact]
-        public void ServerErrorDoesNotStreamItem()
+        public async Task ServerErrorDoesNotStreamItem()
         {
             List<ServiceObservation> observations = new List<ServiceObservation>();
-            AutoResetEvent observationSignal = new AutoResetEvent(false);
             _observableConsul.ObserveService("MyService").Subscribe(o => {
                 observations.Add(o);
-                observationSignal.Set();
             });
-            _consulClient.CompleteService("MyService", new QueryResult<CatalogService[]>
+            await _consulClient.CompleteServiceAsync("MyService", new QueryResult<CatalogService[]>
             {
                 StatusCode = HttpStatusCode.InternalServerError
             });
-            observationSignal.WaitOne(100);
             observations.Should().BeEmpty();
         }
 
         [Fact]
-        public void OkServiceResponseIsStreamed()
+        public async Task OkServiceResponseIsStreamed()
         {
             List<ServiceObservation> observations = new List<ServiceObservation>();
-            AutoResetEvent observationSignal = new AutoResetEvent(false);
             _observableConsul.ObserveService("MyService").Subscribe(o => {
                 observations.Add(o);
-                observationSignal.Set();
             });
-            _consulClient.CompleteService("MyService", new QueryResult<CatalogService[]>
+            await _consulClient.CompleteServiceAsync("MyService", new QueryResult<CatalogService[]>
             {
                 StatusCode = HttpStatusCode.OK,
                 Response = new CatalogService[] {
@@ -56,12 +52,9 @@ namespace ConsulRx.UnitTests
                     }
                 }
             });
-            observationSignal.WaitOne(100);
             observations.Should().HaveCount(1);
             observations[0].ServiceName.Should().Be("MyService");
             observations[0].Result.Response[0].ServiceAddress.Should().Be("10.8.8.3");
         }
-        
-        
     }
 }

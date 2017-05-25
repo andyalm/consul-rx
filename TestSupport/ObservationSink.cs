@@ -2,23 +2,25 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
+using ConsulRx.UnitTests;
 
 namespace ConsulRx.TestSupport
 {
     public class ObservationSink<T> : IEnumerable<T>
     {
         private readonly ConcurrentBag<T> _observations = new ConcurrentBag<T>();
-        private readonly AutoResetEvent _resetEvent = new AutoResetEvent(false);
+        private readonly AsyncAutoResetEvent _resetEvent = new AsyncAutoResetEvent(false);
 
         public void Add(T item)
         {
-            _resetEvent.Set();
             _observations.Add(item);
+            _resetEvent.Set();
         }
 
-        public void WaitForAdd()
+        public Task WaitForAddAsync()
         {
-            _resetEvent.WaitOne(100);
+            return _resetEvent.WaitAsync(1000);
         }
         
         public IEnumerator<T> GetEnumerator()

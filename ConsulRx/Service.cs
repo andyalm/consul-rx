@@ -49,7 +49,7 @@ namespace ConsulRx
 
         protected bool Equals(ServiceNode other)
         {
-            return string.Equals(Name, other.Name) && string.Equals(Address, other.Address) && Port == other.Port && Tags.SequenceEqual(other.Tags);
+            return string.Equals(Name, other.Name) && string.Equals(Address, other.Address) && Port == other.Port && Equals(Tags, other.Tags);
         }
 
         public override bool Equals(object obj)

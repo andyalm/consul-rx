@@ -25,14 +25,45 @@ namespace ConsulRx
             _leaves = leaves;
         }
 
-        public KeyValueStore Update(KeyValueNode kvNode)
+        public bool TryUpdate(KeyValueNode kvNode, out KeyValueStore updatedStore)
         {
-            return new KeyValueStore(_leaves.SetItem(kvNode.FullKey, kvNode));
+            if (_leaves.TryGetValue(kvNode.FullKey, out var existingNode) && existingNode.Equals(kvNode))
+            {
+                updatedStore = null;
+                return false;
+            }
+
+            updatedStore = new KeyValueStore(_leaves.SetItem(kvNode.FullKey, kvNode));
+            return true;
         }
 
-        public KeyValueStore Update(IEnumerable<KeyValueNode> kvNodes)
+        public bool TryUpdate(IEnumerable<KeyValueNode> kvNodes, out KeyValueStore updatedStore)
         {
-            return new KeyValueStore(_leaves.SetItems(kvNodes.Select(n => n.ToIndexedPair())));
+            bool atLeastOneUpdate = false;
+            var leaves = _leaves;
+            foreach (var kvNode in kvNodes)
+            {
+                if (leaves.TryGetValue(kvNode.FullKey, out var existingNode) && existingNode.Equals(kvNode))
+                {
+                    continue;
+                }
+                atLeastOneUpdate = true;
+                leaves = leaves.SetItem(kvNode.FullKey, kvNode);
+            }
+
+            if (atLeastOneUpdate)
+            {
+                updatedStore = new KeyValueStore(leaves);
+                return true;
+            }
+
+            updatedStore = null;
+            return false;
+        }
+
+        public bool ContainsKey(string fullKey)
+        {
+            return _leaves.ContainsKey(fullKey);
         }
 
         public string GetValue(string fullKey)
@@ -61,6 +92,11 @@ namespace ConsulRx
         public IEnumerable<KeyValueNode> GetTree(string keyPrefix)
         {
             return _leaves.Values.Where(node => node.IsDescendentOf(keyPrefix));
+        }
+
+        public bool ContainsKeyStartingWith(string keyPrefix)
+        {
+            return _leaves.Keys.Any(k => k.StartsWith(keyPrefix, StringComparison.OrdinalIgnoreCase));
         }
     }
 }
