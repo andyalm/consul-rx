@@ -9,16 +9,17 @@ namespace ConsulRx
     {
         private readonly ImmutableDictionary<string, Service> _services;
         public IEnumerable<Service> Services => _services.Values;
-        
-        public KeyValueStore KVStore { get; }
 
-        public IEnumerable<string> MissingKeyPrefixes => _missingKeyPrefixes;
+        private readonly KeyValueStore _kvStore;
+        public IReadOnlyKeyValueStore KVStore => _kvStore;
+
         private readonly ImmutableHashSet<string> _missingKeyPrefixes;
+        public IEnumerable<string> MissingKeyPrefixes => _missingKeyPrefixes;
 
         public ConsulState()
         {
             _services = ImmutableDictionary<string,Service>.Empty.WithComparers(StringComparer.OrdinalIgnoreCase);
-            KVStore = new KeyValueStore();
+            _kvStore = KeyValueStore.Empty;
             _missingKeyPrefixes = ImmutableHashSet<string>.Empty.WithComparer(StringComparer.OrdinalIgnoreCase);
         }
 
@@ -26,7 +27,7 @@ namespace ConsulRx
             ImmutableHashSet<string> missingKeyPrefixes)
         {
             _services = services;
-            KVStore = kvStore;
+            _kvStore = kvStore;
             _missingKeyPrefixes = missingKeyPrefixes;
         }
 
@@ -46,7 +47,7 @@ namespace ConsulRx
                 return false;
             }
 
-            updatedState = new ConsulState(_services.SetItem(service.Name, service), KVStore, _missingKeyPrefixes);
+            updatedState = new ConsulState(_services.SetItem(service.Name, service), _kvStore, _missingKeyPrefixes);
             return true;
         }
 
@@ -60,7 +61,7 @@ namespace ConsulRx
 
         public bool TryUpdateKVNode(KeyValueNode kvNode, out ConsulState updatedState)
         {
-            if (KVStore.TryUpdate(kvNode, out var updatedKvStore))
+            if (_kvStore.TryUpdate(kvNode, out var updatedKvStore))
             {
                 updatedState = new ConsulState(_services, updatedKvStore, _missingKeyPrefixes);
                 return true;
@@ -79,13 +80,31 @@ namespace ConsulRx
 
         public bool TryUpdateKVNodes(IEnumerable<KeyValueNode> kvNodes, out ConsulState updatedState)
         {
-            if (KVStore.TryUpdate(kvNodes, out var updatedKvStore))
+            var missingKeyPrefixes = _missingKeyPrefixes;
+            if (kvNodes.Any())
             {
-                updatedState = new ConsulState(_services, updatedKvStore, _missingKeyPrefixes);
+                var noLongerMissingKeyPrefix = _missingKeyPrefixes.FirstOrDefault(keyPrefix => kvNodes.First().FullKey.StartsWith(keyPrefix));
+                if (noLongerMissingKeyPrefix != null)
+                {
+                    missingKeyPrefixes = _missingKeyPrefixes.Remove(noLongerMissingKeyPrefix);
+                }
+            }
+
+            if (_kvStore.TryUpdate(kvNodes, out var updatedKvStore))
+            {
+                updatedState = new ConsulState(_services, updatedKvStore, missingKeyPrefixes);
                 return true;
             }
             updatedState = null;
             return false;
+        }
+
+        public ConsulState MarkKeyPrefixAsMissingOrEmpty(string keyPrefix)
+        {
+            if (TryMarkKeyPrefixAsMissingOrEmpty(keyPrefix, out var updatedState))
+                return updatedState;
+
+            return this;
         }
 
         public bool TryMarkKeyPrefixAsMissingOrEmpty(string keyPrefix, out ConsulState updatedState)
@@ -95,7 +114,12 @@ namespace ConsulRx
                 updatedState = null;
                 return false;
             }
-            updatedState = new ConsulState(_services, KVStore, _missingKeyPrefixes.Add(keyPrefix));
+            var kvStore = _kvStore;
+            if (_kvStore.TryRemoveKeysStartingWith(keyPrefix, out var updatedKvStore))
+            {
+                kvStore = updatedKvStore;
+            }
+            updatedState = new ConsulState(_services, kvStore, _missingKeyPrefixes.Add(keyPrefix));
             return true;
         }
 

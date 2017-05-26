@@ -6,11 +6,12 @@ using System.Linq;
 
 namespace ConsulRx
 {
-    public class KeyValueStore : IEnumerable<KeyValueNode>
+    public class KeyValueStore : IReadOnlyKeyValueStore
     {
         private readonly ImmutableDictionary<string,KeyValueNode> _leaves;
+        public static readonly KeyValueStore Empty = new KeyValueStore();
 
-        public KeyValueStore()
+        private KeyValueStore()
         {
             _leaves = ImmutableDictionary<string, KeyValueNode>.Empty.WithComparers(StringComparer.OrdinalIgnoreCase);
         }
@@ -54,6 +55,19 @@ namespace ConsulRx
             if (atLeastOneUpdate)
             {
                 updatedStore = new KeyValueStore(leaves);
+                return true;
+            }
+
+            updatedStore = null;
+            return false;
+        }
+
+        public bool TryRemoveKeysStartingWith(string keyPrefix, out KeyValueStore updatedStore)
+        {
+            var keysToRemove = _leaves.Keys.Where(key => key.StartsWith(keyPrefix, StringComparison.OrdinalIgnoreCase)).ToArray();
+            if (keysToRemove.Any())
+            {
+                updatedStore = new KeyValueStore(_leaves.RemoveRange(keysToRemove));
                 return true;
             }
 
