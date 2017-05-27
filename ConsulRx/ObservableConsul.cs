@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Reactive.Concurrency;
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
@@ -215,42 +216,65 @@ namespace ConsulRx
         private IObservable<TObservation> LongPoll<TResponse,TObservation>(Func<ulong,Task<QueryResult<TResponse>>> poll, Func<QueryResult<TResponse>,TObservation> toObservation, string monitoringOperation, IDictionary<string,object> monitoringProperties) where TObservation : class
         {
             ulong index = default(ulong);
-            return Observable.FromAsync(async () =>
+            return Observable.Create<TObservation>(async (o, cancel) =>
             {
-                var eventContext = new EventContext("ConsulRx", monitoringOperation);
-                eventContext["RequestIndex"] = index;
-                eventContext.AddValues(monitoringProperties);
-                try
+                while (true)
                 {
-                    var result = await poll(index);
-                    index = result.LastIndex;
-                    eventContext.IncludeConsulResult(result);
-
-                    var statusCodeNumber = ((int) result.StatusCode).ToString();
-                    if (statusCodeNumber.StartsWith("5"))
+                    var eventContext = new EventContext("ConsulRx", monitoringOperation);
+                    eventContext["RequestIndex"] = index;
+                    eventContext.AddValues(monitoringProperties);
+                    QueryResult<TResponse> result = null;
+                    Exception exception = null;
+                    try
                     {
+                        result = await poll(index);
+                    }
+                    catch (Exception ex)
+                    {
+                        eventContext.IncludeException(ex);
+                        exception = ex;
+                    }
+                    if (cancel.IsCancellationRequested)
+                    {
+                        o.OnCompleted();
+                        return;
+                    }
+                    if (result != null)
+                    {
+                        index = result.LastIndex;
+                        eventContext.IncludeConsulResult(result);
+
+                        if (result.StatusCode != HttpStatusCode.OK && result.StatusCode != HttpStatusCode.NotFound)
+                        {
+                            exception = new ConsulErrorException(result);
+                        }
+                    }
+                    if (exception == null)
+                    {
+                        o.OnNext(toObservation(result));
+                    }
+                    else
+                    {
+                        o.OnError(exception);
+                        if (exception is ConsulErrorException consulException &&
+                            ((int) consulException.Result.StatusCode).ToString().StartsWith("4"))
+                        {
+                            //no point in retrying for a 400 level error. Let's just quit now
+                            o.OnCompleted();
+                            return;
+                        }
+
                         eventContext["SecondsUntilRetry"] = _retryDelay?.Seconds ?? 0;
-                        //We got a 500 error and will want to wait a bit to retry so we don't start slamming Consul
                         if (_retryDelay != null)
                         {
-                            await Task.Delay(_retryDelay.Value);
+                            await Task.Delay(_retryDelay.Value, cancel);
                         }
-                        return (TObservation) null;
                     }
-
-                    return toObservation(result);
                 }
-                catch (Exception ex)
-                {
-                    eventContext.IncludeException(ex);
-                    throw;
-                }
-                finally
-                {
-                    eventContext.Dispose();
-                }
-            }).Repeat().Where(o => o != null);
+            });
         }
+        
+        
     }
 
     public static class ObservableConsulExtensions

@@ -22,20 +22,6 @@ namespace ConsulRx.UnitTests
         }
 
         [Fact]
-        public async Task ServerErrorDoesNotStreamItem()
-        {
-            List<ServiceObservation> observations = new List<ServiceObservation>();
-            _observableConsul.ObserveService("MyService").Subscribe(o => {
-                observations.Add(o);
-            });
-            await _consulClient.CompleteServiceAsync("MyService", new QueryResult<CatalogService[]>
-            {
-                StatusCode = HttpStatusCode.InternalServerError
-            });
-            observations.Should().BeEmpty();
-        }
-
-        [Fact]
         public async Task OkServiceResponseIsStreamed()
         {
             List<ServiceObservation> observations = new List<ServiceObservation>();
@@ -55,6 +41,42 @@ namespace ConsulRx.UnitTests
             observations.Should().HaveCount(1);
             observations[0].ServiceName.Should().Be("MyService");
             observations[0].Result.Response[0].ServiceAddress.Should().Be("10.8.8.3");
+        }
+
+        [Fact]
+        public async Task ServerErrorStreamsException()
+        {
+            List<ServiceObservation> observations = new List<ServiceObservation>();
+            List<Exception> errorObservations = new List<Exception>();
+            _observableConsul.ObserveService("MyService").Subscribe(o => {
+                observations.Add(o);
+            }, ex => errorObservations.Add(ex));
+            await _consulClient.CompleteServiceAsync("MyService", new QueryResult<CatalogService[]>
+            {
+                StatusCode = HttpStatusCode.InternalServerError
+            });
+            observations.Should().BeEmpty();
+            errorObservations.Should().NotBeEmpty();
+            errorObservations.Should().ContainItemsAssignableTo<ConsulErrorException>();
+            var exception = (ConsulErrorException)errorObservations[0];
+            exception.Result.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        }
+        
+        [Fact]
+        public async Task ServerErrorIsRetried()
+        {
+            List<Exception> errorObservations = new List<Exception>();
+            _observableConsul.ObserveService("MyService").Subscribe(o => {}, ex => errorObservations.Add(ex));
+            await _consulClient.CompleteServiceAsync("MyService", new QueryResult<CatalogService[]>
+            {
+                StatusCode = HttpStatusCode.InternalServerError
+            });
+            await _consulClient.CompleteServiceAsync("MyService", new QueryResult<CatalogService[]>
+            {
+                StatusCode = HttpStatusCode.InternalServerError
+            });
+            await Task.Delay(1000);
+            errorObservations.Should().HaveCount(2);
         }
     }
 }

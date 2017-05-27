@@ -7,7 +7,6 @@ namespace ConsulRx
     {
         bool ContainsKey(string fullKey);
         string GetValue(string fullKey);
-        IEnumerator<KeyValueNode> GetEnumerator();
         IEnumerable<KeyValueNode> GetChildren(string keyPrefix);
         IEnumerable<KeyValueNode> GetTree(string keyPrefix);
         bool ContainsKeyStartingWith(string keyPrefix);
