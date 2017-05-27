@@ -49,7 +49,7 @@ namespace ConsulRx.UnitTests
                         }
                     },
                 }
-            }, out _).Should().BeFalse();
+            }, out var dontCare).Should().BeFalse();
         }
 
         [Fact]
@@ -102,7 +102,7 @@ namespace ConsulRx.UnitTests
         public void TryUpdateKeyWithSameValueDoesNotUpdate()
         {
             var consulState = _consulState.UpdateKVNode(new KeyValueNode("apps/setting1", "val1"));
-            consulState.TryUpdateKVNode(new KeyValueNode("apps/setting1", "val1"), out _).Should().BeFalse();
+            consulState.TryUpdateKVNode(new KeyValueNode("apps/setting1", "val1"), out var dontCare).Should().BeFalse();
         }
 
         [Fact]
@@ -125,7 +125,7 @@ namespace ConsulRx.UnitTests
             {
                 new KeyValueNode("apps/myapp/setting1", "val1"),
                 new KeyValueNode("apps/myapp/setting2", "val2"),
-            }, out _).Should().BeFalse();
+            }, out var dontCare).Should().BeFalse();
         }
 
         [Fact]

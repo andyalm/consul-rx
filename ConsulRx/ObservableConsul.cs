@@ -79,18 +79,14 @@ namespace ConsulRx
                 getObservable().Subscribe(item =>
                 {
                     HandleConsulObservable(item, subscribe);
-                });
+                }, ex => subject.OnError(ex));
             }
         
             void HandleConsulObservable<T>(T observation, Action<T> action) where T : IConsulObservation
             {
-                if (observation.Result.StatusCode == HttpStatusCode.OK ||
-                    observation.Result.StatusCode == HttpStatusCode.NotFound)
+                lock (updateMutex)
                 {
-                    lock (updateMutex)
-                    {
-                        action(observation);
-                    }
+                    action(observation);
                 }
             }
             
@@ -212,10 +208,13 @@ namespace ConsulRx
                 WaitTime = _longPollMaxWait
             };
         }
+        
+        private static readonly HashSet<HttpStatusCode> HealthyCodes = new HashSet<HttpStatusCode>{HttpStatusCode.OK, HttpStatusCode.NotFound};
 
         private IObservable<TObservation> LongPoll<TResponse,TObservation>(Func<ulong,Task<QueryResult<TResponse>>> poll, Func<QueryResult<TResponse>,TObservation> toObservation, string monitoringOperation, IDictionary<string,object> monitoringProperties) where TObservation : class
         {
             ulong index = default(ulong);
+            var successfullyContactedConsulAtLeastOnce = false;
             return Observable.Create<TObservation>(async (o, cancel) =>
             {
                 while (true)
@@ -243,31 +242,42 @@ namespace ConsulRx
                     {
                         index = result.LastIndex;
                         eventContext.IncludeConsulResult(result);
-
-                        if (result.StatusCode != HttpStatusCode.OK && result.StatusCode != HttpStatusCode.NotFound)
+                        if(HealthyCodes.Contains(result.StatusCode))
                         {
+                            //200 or 404 are the only response codes we should expect if consul and client are both configured properly
+                            successfullyContactedConsulAtLeastOnce = true;
+                        }
+                        else
+                        {
+                            //if we got an error that indicates either server or client aren't healthy (e.g. 500 or 403)
+                            //then model this as an exception (same as if server can't be contacted). We will figure out what to do below
                             exception = new ConsulErrorException(result);
+                            eventContext.SetLevel(Level.Error);
                         }
                     }
+                    
                     if (exception == null)
                     {
                         o.OnNext(toObservation(result));
                     }
                     else
                     {
-                        o.OnError(exception);
-                        if (exception is ConsulErrorException consulException &&
-                            ((int) consulException.Result.StatusCode).ToString().StartsWith("4"))
+                        if (successfullyContactedConsulAtLeastOnce)
                         {
-                            //no point in retrying for a 400 level error. Let's just quit now
-                            o.OnCompleted();
-                            return;
+                            //if we have been successful at contacting consul already, then we will retry under the assumption that
+                            //things will eventually get healthy again
+                            eventContext["SecondsUntilRetry"] = _retryDelay?.Seconds ?? 0;
+                            if (_retryDelay != null)
+                            {
+                                await Task.Delay(_retryDelay.Value, cancel);
+                            }
                         }
-
-                        eventContext["SecondsUntilRetry"] = _retryDelay?.Seconds ?? 0;
-                        if (_retryDelay != null)
+                        else
                         {
-                            await Task.Delay(_retryDelay.Value, cancel);
+                            //if we encountered an error at the very beginning, then we don't have enough confidence that retrying will actually help
+                            //so we will stream the exception out and let the consumer figure out what to do
+                            o.OnError(exception);
+                            return;
                         }
                     }
                 }

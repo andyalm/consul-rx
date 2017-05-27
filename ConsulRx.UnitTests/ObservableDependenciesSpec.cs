@@ -18,6 +18,7 @@ namespace ConsulRx.UnitTests
         private readonly FakeConsulClient _consulClient = new FakeConsulClient();
         private readonly ObservableConsul _observableConsul;
         private readonly ObservationSink<ConsulState> _consulStateObservations = new ObservationSink<ConsulState>();
+        private Exception _consulStateException = null;
 
         public ObservableDependenciesSpec()
         {
@@ -236,54 +237,17 @@ namespace ConsulRx.UnitTests
         }
 
         [Fact]
-        public async Task ServerErrorRetrievingServiceWillBlockStreamingOfResultUntilResolved()
+        public async Task ExceptionGettingKeyIsBubbledUp()
         {
-            _consulDependencies.Services.Add("myservice1");
+            _consulDependencies.Keys.Add("key1");
             StartObserving();
-            await CompleteServiceAsync("myservice1", new QueryResult<CatalogService[]>
+            await CompleteGetAsync("key1", new QueryResult<KVPair>
             {
                 StatusCode = HttpStatusCode.InternalServerError
             });
             _consulStateObservations.Should().BeEmpty();
-
-            //resolve error
-            await CompleteServiceAsync("myservice1", CreateServiceObservation("myservice1"));
-            _consulStateObservations.Should().NotBeEmpty();
-            _consulStateObservations.Last().Services.Should().Contain(s => s.Name == "myservice1");
-        }
-
-        [Fact]
-        public async Task ServerErrorRetrievingKeyWillBlockStreamingOfResultUntilResolved()
-        {
-            _consulDependencies.Keys.Add("mykey1");
-            StartObserving();
-            await CompleteGetAsync("mykey1", new QueryResult<KVPair>
-            {
-                StatusCode = HttpStatusCode.InternalServerError
-            });
-            _consulStateObservations.Should().BeEmpty();
-
-            //resolve error
-            await CompleteGetAsync("mykey1", CreateKeyObservation("mykey1"));
-            _consulStateObservations.Should().NotBeEmpty();
-            _consulStateObservations.Last().KVStore.Should().Contain(p => p.FullKey == "mykey1");
-        }
-
-        [Fact]
-        public async Task ServerErrorRetrievingKeyRecursiveWillBlockStreamingOfResultUntilResolved()
-        {
-            _consulDependencies.KeyPrefixes.Add("mykeyprefix1");
-            StartObserving();
-            await CompleteListAsync("mykeyprefix1", new QueryResult<KVPair[]>
-            {
-                StatusCode = HttpStatusCode.InternalServerError
-            });
-            _consulStateObservations.Should().BeEmpty();
-
-            //resolve error
-            await CompleteListAsync("mykeyprefix1", CreateKeyRecursiveObservation("mykeyprefix1"));
-            _consulStateObservations.Should().NotBeEmpty();
-            _consulStateObservations.Last().KVStore.Should().Contain(k => k.FullKey.StartsWith("mykeyprefix1/"));
+            _consulStateException.Should().NotBeNull();
+            _consulStateException.Should().BeAssignableTo<ConsulErrorException>();
         }
 
         private Task CompleteServiceAsync(string serviceName, QueryResult<CatalogService[]> result)
@@ -312,7 +276,11 @@ namespace ConsulRx.UnitTests
 
         private void StartObserving()
         {
-            _observableConsul.ObserveDependencies(_consulDependencies).Subscribe(s => _consulStateObservations.Add(s));
+            _observableConsul.ObserveDependencies(_consulDependencies).Subscribe(s => _consulStateObservations.Add(s),
+                ex =>
+                {
+                    _consulStateException = ex;
+                });
         }
         
         private QueryResult<KVPair> CreateKeyObservation(string key)
