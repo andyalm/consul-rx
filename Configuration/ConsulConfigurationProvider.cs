@@ -46,6 +46,9 @@ namespace ConsulRx.Configuration
                 {
                     OnReload();
                 }
+            }, exception =>
+            {
+                stateLoaded.SetException(exception);
             });
 
             return stateLoaded.Task;

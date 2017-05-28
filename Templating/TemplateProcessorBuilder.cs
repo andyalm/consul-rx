@@ -43,7 +43,7 @@ namespace ConsulRx.Templating
             return this;
         }
 
-        public IDisposable Build()
+        public TemplateProcessor Build()
         {
             var consulClient = new ObservableConsul(_consulConfig);
 

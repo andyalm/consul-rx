@@ -72,9 +72,9 @@ namespace ConsulRx.Templating
             {
                 EmitResult result = compilation.Emit(ms);
 
-                eventContext["Success"] = result.Success;
                 if (!result.Success)
                 {
+                    eventContext.SetLevel(Level.Error);
                     var failures = result.Diagnostics.Where(diagnostic =>
                         diagnostic.IsWarningAsError ||
                         diagnostic.Severity == DiagnosticSeverity.Error).ToArray();

@@ -48,13 +48,19 @@ namespace ConsulRx.Templating.CommandLine
                     .TemplateProperties(ParseProperties(properties.Values))
                     .Build();
 
-                using (templateProcessor)
+                try
                 {
-                    Thread.Sleep(-1);
+                    templateProcessor.Start().GetAwaiter().GetResult();
                 }
-
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine(ex);
+                    return 1;
+                }
+                
                 return 0;
             });
+            
 
             return app.Execute(args);
         }
