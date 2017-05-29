@@ -4,7 +4,19 @@ namespace ConsulRx
 {
     public class ObservableConsulConfiguration
     {
-        public string Endpoint { get; set; }
+        private string _endpoint;
+
+        public string Endpoint
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(_endpoint))
+                    return _endpoint;
+
+                return null;
+            }
+            set => _endpoint = value;
+        }
         public string Datacenter { get; set; }
         public string AclToken { get; set; }
         public TimeSpan? LongPollMaxWait { get; set; }

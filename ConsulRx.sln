@@ -23,6 +23,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsulRx.UnitTests", "ConsulRx.UnitTests\ConsulRx.UnitTests.csproj", "{A41D94C5-85D2-46ED-8BA9-FE0412D63130}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsulRx.Configuration.TestHarness", "Configuration.TestHarness\ConsulRx.Configuration.TestHarness.csproj", "{80879533-D512-4774-9700-E6412D838684}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -129,6 +131,18 @@ Global
 		{A41D94C5-85D2-46ED-8BA9-FE0412D63130}.Release|x64.Build.0 = Release|Any CPU
 		{A41D94C5-85D2-46ED-8BA9-FE0412D63130}.Release|x86.ActiveCfg = Release|Any CPU
 		{A41D94C5-85D2-46ED-8BA9-FE0412D63130}.Release|x86.Build.0 = Release|Any CPU
+		{80879533-D512-4774-9700-E6412D838684}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80879533-D512-4774-9700-E6412D838684}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80879533-D512-4774-9700-E6412D838684}.Debug|x64.ActiveCfg = Debug|x64
+		{80879533-D512-4774-9700-E6412D838684}.Debug|x64.Build.0 = Debug|x64
+		{80879533-D512-4774-9700-E6412D838684}.Debug|x86.ActiveCfg = Debug|x86
+		{80879533-D512-4774-9700-E6412D838684}.Debug|x86.Build.0 = Debug|x86
+		{80879533-D512-4774-9700-E6412D838684}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80879533-D512-4774-9700-E6412D838684}.Release|Any CPU.Build.0 = Release|Any CPU
+		{80879533-D512-4774-9700-E6412D838684}.Release|x64.ActiveCfg = Release|x64
+		{80879533-D512-4774-9700-E6412D838684}.Release|x64.Build.0 = Release|x64
+		{80879533-D512-4774-9700-E6412D838684}.Release|x86.ActiveCfg = Release|x86
+		{80879533-D512-4774-9700-E6412D838684}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

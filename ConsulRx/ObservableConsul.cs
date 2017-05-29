@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
@@ -34,8 +32,10 @@ namespace ConsulRx
 
             _client = new ConsulClient(c =>
             {
-                c.Address = new Uri(config.Endpoint ?? "http://localhost:8500");
-                c.Datacenter = config.Datacenter;
+                if(!string.IsNullOrEmpty(config.Endpoint))
+                    c.Address = new Uri(config.Endpoint);
+                if(!string.IsNullOrEmpty(config.Datacenter))
+                    c.Datacenter = config.Datacenter;
             });
             _longPollMaxWait = config.LongPollMaxWait;
             _aclToken = config.AclToken;
@@ -94,7 +94,7 @@ namespace ConsulRx
             Observe(() => this.ObserveServices(dependencies.Services),
                 services =>
                 {
-                    var eventContext = new EventContext("ConsulRx", "UpdateService");
+                    var eventContext = new EventContext("ConsulRx.ConsulState", "UpdateService");
                     try
                     {
                         var service = services.ToService();
@@ -123,7 +123,7 @@ namespace ConsulRx
             Observe(() => this.ObserveKeys(dependencies.Keys),
                 kv =>
                 {
-                    var eventContext = new EventContext("ConsulRx", "UpdateKey");
+                    var eventContext = new EventContext("ConsulRx.ConsulState", "UpdateKey");
                     try
                     {
                         var kvNode = kv.ToKeyValueNode();
@@ -154,7 +154,7 @@ namespace ConsulRx
             Observe(() => this.ObserveKeysRecursive(dependencies.KeyPrefixes),
                 kv =>
                 {
-                    var eventContext = new EventContext("ConsulRx", "UpdateKeys");
+                    var eventContext = new EventContext("ConsulRx.ConsulState", "UpdateKeys");
                     try
                     {
                         eventContext["KeyPrefix"] = kv.KeyPrefix;
@@ -193,7 +193,10 @@ namespace ConsulRx
                         Console.WriteLine(ex);
                         throw;
                     }
-                    
+                    finally
+                    {
+                        eventContext.Dispose();
+                    }
                 });
 
             return subject.Where(s => s.SatisfiesAll(dependencies));
@@ -219,65 +222,67 @@ namespace ConsulRx
             {
                 while (true)
                 {
-                    var eventContext = new EventContext("ConsulRx", monitoringOperation);
-                    eventContext["RequestIndex"] = index;
-                    eventContext.AddValues(monitoringProperties);
-                    QueryResult<TResponse> result = null;
-                    Exception exception = null;
-                    try
+                    using (var eventContext = new EventContext("ConsulRx.Client", monitoringOperation))
                     {
-                        result = await poll(index);
-                    }
-                    catch (Exception ex)
-                    {
-                        eventContext.IncludeException(ex);
-                        exception = ex;
-                    }
-                    if (cancel.IsCancellationRequested)
-                    {
-                        o.OnCompleted();
-                        return;
-                    }
-                    if (result != null)
-                    {
-                        index = result.LastIndex;
-                        eventContext.IncludeConsulResult(result);
-                        if(HealthyCodes.Contains(result.StatusCode))
+                        eventContext["RequestIndex"] = index;
+                        eventContext.AddValues(monitoringProperties);
+                        QueryResult<TResponse> result = null;
+                        Exception exception = null;
+                        try
                         {
-                            //200 or 404 are the only response codes we should expect if consul and client are both configured properly
-                            successfullyContactedConsulAtLeastOnce = true;
+                            result = await poll(index);
                         }
-                        else
+                        catch (Exception ex)
                         {
-                            //if we got an error that indicates either server or client aren't healthy (e.g. 500 or 403)
-                            //then model this as an exception (same as if server can't be contacted). We will figure out what to do below
-                            exception = new ConsulErrorException(result);
-                            eventContext.SetLevel(Level.Error);
+                            eventContext.IncludeException(ex);
+                            exception = ex;
                         }
-                    }
-                    
-                    if (exception == null)
-                    {
-                        o.OnNext(toObservation(result));
-                    }
-                    else
-                    {
-                        if (successfullyContactedConsulAtLeastOnce)
+                        if (cancel.IsCancellationRequested)
                         {
-                            //if we have been successful at contacting consul already, then we will retry under the assumption that
-                            //things will eventually get healthy again
-                            eventContext["SecondsUntilRetry"] = _retryDelay?.Seconds ?? 0;
-                            if (_retryDelay != null)
+                            o.OnCompleted();
+                            return;
+                        }
+                        if (result != null)
+                        {
+                            index = result.LastIndex;
+                            eventContext.IncludeConsulResult(result);
+                            if (HealthyCodes.Contains(result.StatusCode))
                             {
-                                await Task.Delay(_retryDelay.Value, cancel);
+                                //200 or 404 are the only response codes we should expect if consul and client are both configured properly
+                                successfullyContactedConsulAtLeastOnce = true;
+                            }
+                            else
+                            {
+                                //if we got an error that indicates either server or client aren't healthy (e.g. 500 or 403)
+                                //then model this as an exception (same as if server can't be contacted). We will figure out what to do below
+                                exception = new ConsulErrorException(result);
+                                eventContext.SetLevel(Level.Error);
                             }
                         }
+
+                        if (exception == null)
+                        {
+                            o.OnNext(toObservation(result));
+                        }
                         else
                         {
-                            //if we encountered an error at the very beginning, then we don't have enough confidence that retrying will actually help
-                            //so we will stream the exception out and let the consumer figure out what to do
-                            o.OnError(exception);
-                            return;
+                            if (successfullyContactedConsulAtLeastOnce)
+                            {
+                                //if we have been successful at contacting consul already, then we will retry under the assumption that
+                                //things will eventually get healthy again
+                                eventContext["SecondsUntilRetry"] = _retryDelay?.Seconds ?? 0;
+                                if (_retryDelay != null)
+                                {
+                                    await Task.Delay(_retryDelay.Value, cancel);
+                                }
+                            }
+                            else
+                            {
+                                //if we encountered an error at the very beginning, then we don't have enough confidence that retrying will actually help
+                                //so we will stream the exception out and let the consumer figure out what to do
+                                o.OnError(exception);
+                                return;
+                            }
                         }
                     }
                 }

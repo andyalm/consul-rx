@@ -1,0 +1,24 @@
+version: '3'
+services:
+  consul:
+    image: consul
+    ports:
+    - '8500:8500'
+    command: ["agent", "-dev", "-client", "0.0.0.0"]
+  seeder:
+    build:
+      context: .
+      dockerfile: Dockerfile-ConsulSeeder
+    depends_on:
+    - consul
+  web:
+    build:
+      context: bin/Debug/netcoreapp1.1/publish
+      dockerfile: Dockerfile-TestHarness
+    ports:
+    - '80:80'
+    environment:
+      CONSUL_HTTP_ADDR: "consul:8500"
+    depends_on:
+    - consul
+  

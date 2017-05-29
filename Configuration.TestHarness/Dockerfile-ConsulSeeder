@@ -1,0 +1,10 @@
+FROM alpine
+
+ENV CONSUL_HTTP_ADDR consul:8500
+
+RUN apk add --update bash curl && rm -rf /var/cache/apk/*
+
+COPY register-service.sh /
+COPY set-kv.sh /
+COPY seed.sh /
+CMD ["/seed.sh"]

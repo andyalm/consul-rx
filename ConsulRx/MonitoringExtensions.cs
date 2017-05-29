@@ -11,6 +11,17 @@ namespace ConsulRx
             eventContext["HttpStatusCode"] = result.StatusCode;
             eventContext["ResponseIndex"] = result.LastIndex;
             eventContext["KnownLeader"] = result.KnownLeader;
+
+            var services = result.Response as CatalogService[];
+            if (services != null)
+            {
+                 eventContext.IncludeCatalogServices(services);   
+            }
+        }
+
+        private static void IncludeCatalogServices(this EventContext eventContext, CatalogService[] services)
+        {
+            eventContext["ServiceCount"] = services.Length;
         }
     }
 }
