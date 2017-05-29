@@ -190,7 +190,7 @@ namespace ConsulRx
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine(ex);
+                        eventContext.IncludeException(ex);
                         throw;
                     }
                     finally
