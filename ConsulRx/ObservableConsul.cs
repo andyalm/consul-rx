@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using System.Threading.Tasks;
 using Consul;
 using Spiffy.Monitoring;
@@ -38,6 +38,7 @@ namespace ConsulRx
                     c.Datacenter = config.Datacenter;
             });
             _longPollMaxWait = config.LongPollMaxWait;
+            _retryDelay = config.RetryDelay;
             _aclToken = config.AclToken;
         }
 
@@ -71,135 +72,120 @@ namespace ConsulRx
 
         public IObservable<ConsulState> ObserveDependencies(ConsulDependencies dependencies)
         {
+            var consulState = new ConsulState();
             var updateMutex = new object();
-            var subject = new Subject<ConsulState>();
-
-            void Observe<T>(Func<IObservable<T>> getObservable, Action<T> subscribe) where T : IConsulObservation
+            
+            void WrapUpdate(string operationName, Action<EventContext> tryUpdate)
             {
-                getObservable().Subscribe(item =>
+                var eventContext = new EventContext("ConsulRx.ConsulState", operationName);
+                try
                 {
-                    HandleConsulObservable(item, subscribe);
-                }, ex => subject.OnError(ex));
-            }
-        
-            void HandleConsulObservable<T>(T observation, Action<T> action) where T : IConsulObservation
-            {
-                lock (updateMutex)
+                    lock (updateMutex)
+                    {
+                        tryUpdate(eventContext);
+                    }
+                }
+                catch (Exception ex)
                 {
-                    action(observation);
+                    eventContext.IncludeException(ex);
+                    throw;
+                }
+                finally
+                {
+                    eventContext.Dispose();
                 }
             }
             
-            var consulState = new ConsulState();
-            Observe(() => this.ObserveServices(dependencies.Services),
-                services =>
+            var consulStateObservable = Observable.Create<ConsulState>(o =>
+            {
+                var compositeDisposable = new CompositeDisposable
                 {
-                    var eventContext = new EventContext("ConsulRx.ConsulState", "UpdateService");
-                    try
-                    {
-                        var service = services.ToService();
-                        eventContext["ServiceName"] = service.Name;
-                        bool alreadyExisted = consulState.ContainsService(service.Name);
-                        if (consulState.TryUpdateService(service, out var updatedState))
+                    this.ObserveServices(dependencies.Services)
+                        .Select(services => services.ToService())
+                        .Subscribe(service =>
                         {
-                            eventContext["UpdateType"] = alreadyExisted ? "Update" : "Add";
-                            consulState = updatedState;
-                            subject.OnNext(consulState);
-                        }
-                        else
-                        {
-                            eventContext["UpdateType"] = "Noop";
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        eventContext.IncludeException(ex);
-                    }
-                    finally
-                    {
-                        eventContext.Dispose();
-                    }
-                });
-            Observe(() => this.ObserveKeys(dependencies.Keys),
-                kv =>
-                {
-                    var eventContext = new EventContext("ConsulRx.ConsulState", "UpdateKey");
-                    try
-                    {
-                        var kvNode = kv.ToKeyValueNode();
-                        eventContext["Key"] = kvNode.FullKey;
-                        eventContext["Value"] = kvNode.Value;
-                        bool alreadyExisted = consulState.ContainsKey(kvNode.FullKey);
-                        if (consulState.TryUpdateKVNode(kvNode, out var updatedState))
-                        {
-                            eventContext["UpdateType"] = alreadyExisted ? "Update" : "Add";
-                            consulState = updatedState;
-                            subject.OnNext(consulState);
-                        }
-                        else
-                        {
-                            eventContext["UpdateType"] = "Noop";
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        eventContext.IncludeException(ex);
-                        throw;
-                    }
-                    finally
-                    {
-                        eventContext.Dispose();
-                    }
-                });
-            Observe(() => this.ObserveKeysRecursive(dependencies.KeyPrefixes),
-                kv =>
-                {
-                    var eventContext = new EventContext("ConsulRx.ConsulState", "UpdateKeys");
-                    try
-                    {
-                        eventContext["KeyPrefix"] = kv.KeyPrefix;
-                        eventContext["ChildKeyCount"] = kv.Result.Response?.Length ?? 0;
-                        if (kv.Result.Response == null || !kv.Result.Response.Any())
-                        {
-                            if (consulState.TryMarkKeyPrefixAsMissingOrEmpty(kv.KeyPrefix, out var updatedState))
+                            WrapUpdate("UpdateService", eventContext =>
                             {
-                                eventContext["UpdateType"] = "MarkAsMissing";
-                                consulState = updatedState;
-                                subject.OnNext(consulState);
-                            }
-                            else
-                            {
-                                eventContext["UpdateType"] = "Noop";
-                            }
-                        }
-                        else
+                                eventContext["ServiceName"] = service.Name;
+                                bool alreadyExisted = consulState.ContainsService(service.Name);
+                                if (consulState.TryUpdateService(service, out var updatedState))
+                                {
+                                    eventContext["UpdateType"] = alreadyExisted ? "Update" : "Add";
+                                    consulState = updatedState;
+                                    o.OnNext(consulState);
+                                }
+                                else
+                                {
+                                    eventContext["UpdateType"] = "Noop";
+                                }
+                            });
+                        }, o.OnError),
+                    this.ObserveKeys(dependencies.Keys)
+                        .Select(kv => kv.ToKeyValueNode())
+                        .Subscribe(kvNode =>
                         {
-                            var kvNodes = kv.ToKeyValueNodes();
-                            bool alreadyExisted = consulState.ContainsKeyStartingWith(kv.KeyPrefix);
-                            if (consulState.TryUpdateKVNodes(kvNodes, out var updatedState))
+                            WrapUpdate("UpdateKey", eventContext =>
                             {
-                                eventContext["UpdateType"] = alreadyExisted ? "Update" : "Add";
-                                consulState = updatedState;
-                                subject.OnNext(consulState);
-                            }
-                            else
+                                eventContext["Key"] = kvNode.FullKey;
+                                eventContext["Value"] = kvNode.Value;
+                                bool alreadyExisted = consulState.ContainsKey(kvNode.FullKey);
+                                if (consulState.TryUpdateKVNode(kvNode, out var updatedState))
+                                {
+                                    eventContext["UpdateType"] = alreadyExisted ? "Update" : "Add";
+                                    consulState = updatedState;
+                                    o.OnNext(consulState);
+                                }
+                                else
+                                {
+                                    eventContext["UpdateType"] = "Noop";
+                                }
+                            });
+                        }, o.OnError),
+                    this.ObserveKeysRecursive(dependencies.KeyPrefixes)
+                        .Subscribe(kv =>
+                        {
+                            WrapUpdate("UpdateKeys", eventContext =>
                             {
-                                eventContext["UpdateType"] = "Noop";
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        eventContext.IncludeException(ex);
-                        throw;
-                    }
-                    finally
-                    {
-                        eventContext.Dispose();
-                    }
-                });
+                                eventContext["KeyPrefix"] = kv.KeyPrefix;
+                                eventContext["ChildKeyCount"] = kv.Result.Response?.Length ?? 0;
+                                if (kv.Result.Response == null || !kv.Result.Response.Any())
+                                {
+                                    if (consulState.TryMarkKeyPrefixAsMissingOrEmpty(kv.KeyPrefix, out var updatedState)
+                                    )
+                                    {
+                                        eventContext["UpdateType"] = "MarkAsMissing";
+                                        consulState = updatedState;
+                                        o.OnNext(consulState);
+                                    }
+                                    else
+                                    {
+                                        eventContext["UpdateType"] = "Noop";
+                                    }
+                                }
+                                else
+                                {
+                                    var kvNodes = kv.ToKeyValueNodes();
+                                    bool alreadyExisted = consulState.ContainsKeyStartingWith(kv.KeyPrefix);
+                                    if (consulState.TryUpdateKVNodes(kvNodes, out var updatedState))
+                                    {
+                                        eventContext["UpdateType"] = alreadyExisted ? "Update" : "Add";
+                                        consulState = updatedState;
+                                        o.OnNext(consulState);
+                                    }
+                                    else
+                                    {
+                                        eventContext["UpdateType"] = "Noop";
+                                    }
+                                }
+                            });
+                        }, o.OnError)
+                };
 
-            return subject.Where(s => s.SatisfiesAll(dependencies));
+                return compositeDisposable;
+            });
+
+
+            return consulStateObservable.Where(s => s.SatisfiesAll(dependencies));
         }
 
         private QueryOptions QueryOptions(ulong index)
@@ -216,10 +202,10 @@ namespace ConsulRx
 
         private IObservable<TObservation> LongPoll<TResponse,TObservation>(Func<ulong,Task<QueryResult<TResponse>>> poll, Func<QueryResult<TResponse>,TObservation> toObservation, string monitoringOperation, IDictionary<string,object> monitoringProperties) where TObservation : class
         {
-            ulong index = default(ulong);
-            var successfullyContactedConsulAtLeastOnce = false;
             return Observable.Create<TObservation>(async (o, cancel) =>
             {
+                ulong index = default(ulong);
+                var successfullyContactedConsulAtLeastOnce = false;
                 while (true)
                 {
                     using (var eventContext = new EventContext("ConsulRx.Client", monitoringOperation))
@@ -239,6 +225,7 @@ namespace ConsulRx
                         }
                         if (cancel.IsCancellationRequested)
                         {
+                            eventContext["Cancelled"] = true;
                             o.OnCompleted();
                             return;
                         }

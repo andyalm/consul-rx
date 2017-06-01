@@ -10,6 +10,8 @@ namespace ConsulRx.Configuration
         private readonly ServiceConfigMappingCollection _serviceConfigMappings = new ServiceConfigMappingCollection();
         private readonly KVTreeConfigMappingCollection _kvTreeConfigMappings = new KVTreeConfigMappingCollection();
         private readonly KVItemConfigMappingCollection _kvItemConfigMappings = new KVItemConfigMappingCollection();
+        private IEmergencyCache _cache = new FileSystemEmergencyCache();
+        private TimeSpan? _retryDelay = null;
 
         public ConsulConfigurationSource Endpoint(string consulEndpoint)
         {
@@ -62,7 +64,21 @@ namespace ConsulRx.Configuration
 
         internal IConfigurationProvider Build(IObservableConsul consulClient)
         {
-            return new ConsulConfigurationProvider(consulClient, _consulDependencies, _serviceConfigMappings, _kvTreeConfigMappings, _kvItemConfigMappings);
+            return new ConsulConfigurationProvider(consulClient, _cache, _consulDependencies, _serviceConfigMappings, _kvTreeConfigMappings, _kvItemConfigMappings, _retryDelay);
+        }
+
+        internal ConsulConfigurationSource UseCache(IEmergencyCache cache)
+        {
+            _cache = cache;
+
+            return this;
+        }
+
+        internal ConsulConfigurationSource RetryDelay(TimeSpan retryDelay)
+        {
+            _retryDelay = retryDelay;
+
+            return this;
         }
     }
 

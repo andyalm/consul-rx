@@ -1,26 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Spiffy.Monitoring;
 
 namespace ConsulRx.Configuration
 {
     public class ConsulConfigurationProvider : ConfigurationProvider
     {
         private readonly IObservableConsul _consulClient;
+        private readonly IEmergencyCache _emergencyCache;
         private readonly ConsulDependencies _dependencies;
         private readonly ServiceConfigMappingCollection _serviceConfigMappings;
         private readonly KVTreeConfigMappingCollection _kvTreeConfigMappings;
         private readonly KVItemConfigMappingCollection _kvItemConfigMappings;
+        private readonly TimeSpan _retryDelay;
         private ConsulState _consulState;
 
-        public ConsulConfigurationProvider(IObservableConsul consulClient, ConsulDependencies dependencies, ServiceConfigMappingCollection serviceConfigMappings, KVTreeConfigMappingCollection kvTreeConfigMappings, KVItemConfigMappingCollection kvItemConfigMappings)
+        public ConsulConfigurationProvider(IObservableConsul consulClient,
+            IEmergencyCache emergencyCache, 
+            ConsulDependencies dependencies,
+            ServiceConfigMappingCollection serviceConfigMappings,
+            KVTreeConfigMappingCollection kvTreeConfigMappings,
+            KVItemConfigMappingCollection kvItemConfigMappings,
+            TimeSpan? retryDelay = null)
         {
             _consulClient = consulClient;
+            _emergencyCache = emergencyCache;
             _dependencies = dependencies;
             _serviceConfigMappings = serviceConfigMappings;
             _kvTreeConfigMappings = kvTreeConfigMappings;
             _kvItemConfigMappings = kvItemConfigMappings;
+            _retryDelay = retryDelay ?? TimeSpan.FromSeconds(15);
         }
 
         public override void Load()
@@ -28,30 +42,50 @@ namespace ConsulRx.Configuration
             LoadAsync().GetAwaiter().GetResult();
         }
 
-        private Task LoadAsync()
+        public async Task LoadAsync()
         {
-            var stateLoaded = new TaskCompletionSource<ConsulState>();
-            var loaded = false;
-            _consulClient.ObserveDependencies(_dependencies).Subscribe(consulState =>
+            var eventContext = new EventContext("ConsulRx.Configuration", "Load");
+            try
             {
-                _consulState = consulState;
+                _consulState = await _consulClient.ObserveDependencies(_dependencies).FirstAsync().ToTask();
                 UpdateData();
-                if (!loaded)
+                eventContext["LoadedFrom"] = "Consul";
+            }
+            catch (Exception exception)
+            {
+                eventContext.IncludeException(exception);
+                if (_emergencyCache.TryLoad(out var cachedData))
                 {
-                    //TODO: Probable race condition here.
-                    loaded = true;
-                    stateLoaded.SetResult(consulState);
+                    eventContext["LoadedFrom"] = "EmergencyCache";
+                    Data = cachedData;
                 }
                 else
                 {
-                    OnReload();
+                    eventContext["LoadedFrom"] = "UnableToLoad";
+                    throw new ConsulRxConfigurationException("Unable to load configuration from consul. It is likely down or the endpoint is misconfigured. Please check the InnerException for details.", exception);
                 }
-            }, exception =>
+            }
+            finally
             {
-                stateLoaded.SetException(exception);
-            });
+                eventContext.Dispose();
+            }
 
-            return stateLoaded.Task;
+            _consulClient.ObserveDependencies(_dependencies).DelayedRetry(_retryDelay).Subscribe(updatedState =>
+            {
+                using (var reloadEventContext = new EventContext("ConsulRx.Configuration", "Reload"))
+                {
+                    try
+                    {
+                        _consulState = updatedState;
+                        UpdateData();
+                        OnReload();
+                    }
+                    catch (Exception ex)
+                    {
+                        reloadEventContext.IncludeException(ex);
+                    }
+                }
+            });
         }
 
         private void UpdateData()
@@ -62,6 +96,7 @@ namespace ConsulRx.Configuration
             AddKVItemData(data);
 
             Data = data;
+            _emergencyCache.Save(data);
         }
 
         private void AddKVItemData(Dictionary<string, string> data)

@@ -20,6 +20,6 @@ namespace ConsulRx
         public string Datacenter { get; set; }
         public string AclToken { get; set; }
         public TimeSpan? LongPollMaxWait { get; set; }
-        public TimeSpan? RetryDelay { get; set; } = TimeSpan.FromSeconds(5);
+        public TimeSpan? RetryDelay { get; set; } = TimeSpan.FromSeconds(15);
     }
 }

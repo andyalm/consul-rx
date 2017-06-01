@@ -12,8 +12,9 @@ namespace ConsulRx.Configuration.UnitTests
         [Fact]
         public void TreeOfKeysBeRetrievedViaMappedConfigPrefix()
         {
-            var source = new ConsulConfigurationSource();
-            source.MapKeyPrefix("apps/myapp", "consul");
+            var source = new ConsulConfigurationSource()
+                .UseCache(new InMemoryEmergencyCache())
+                .MapKeyPrefix("apps/myapp", "consul");
             
             var consulState = new ConsulState();
             consulState = consulState.UpdateKVNodes(new[]
@@ -33,8 +34,9 @@ namespace ConsulRx.Configuration.UnitTests
         [Fact]
         public void IndividualKeyBeRetrievedViaMappedConfigKey()
         {
-            var source = new ConsulConfigurationSource();
-            source.MapKey("apps/myapp/myfeature", "consul:afeature");
+            var source = new ConsulConfigurationSource()
+                .UseCache(new InMemoryEmergencyCache())
+                .MapKey("apps/myapp/myfeature", "consul:afeature");
             
             var consulState = new ConsulState();
             consulState = consulState.UpdateKVNode(new KeyValueNode("apps/myapp/myfeature", "myvalue"));

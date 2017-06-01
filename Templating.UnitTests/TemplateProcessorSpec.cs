@@ -24,7 +24,7 @@ namespace ConsulRx.Templating.UnitTests
             _consulDependencies.Keys.Add("mykey1");
             _consulDependencies.KeyPrefixes.Add("mykeyprefix1");
             
-            CreateProcessor();
+            CreateProcessor().Start();
             _consul.ObservingDependencies.Should().Contain(d => d.Services.Contains("myservice1"));
             _consul.ObservingDependencies.Should().Contain(d => d.Keys.Contains("mykey1"));
             _consul.ObservingDependencies.Should().Contain(d => d.KeyPrefixes.Contains("mykeyprefix1"));
@@ -34,7 +34,7 @@ namespace ConsulRx.Templating.UnitTests
         public void TemplateIsNotRenderedUntilDependenciesHaveResponded()
         {
             _consulDependencies.Services.Add("myservice1");
-            CreateProcessor();
+            CreateProcessor().Start();
             VerifyRenderIsCalled(Times.Never());
             _consul.Dependencies.OnNext(new ConsulState());
             VerifyRenderIsCalled(Times.Once());

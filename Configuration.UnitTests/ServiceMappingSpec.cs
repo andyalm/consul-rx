@@ -12,8 +12,9 @@ namespace ConsulRx.Configuration.UnitTests
         [Fact]
         public void ServiceEndpointCanBeRetrievedViaMappedConfigKey()
         {
-            var source = new ConsulConfigurationSource();
-            source.MapService("myservice1", "serviceEndpoints:v1:myservice");
+            var source = new ConsulConfigurationSource()
+                .UseCache(new InMemoryEmergencyCache())
+                .MapService("myservice1", "serviceEndpoints:v1:myservice");
             
             var consulState = new ConsulState();
             consulState = consulState.UpdateService(new Service
@@ -39,8 +40,9 @@ namespace ConsulRx.Configuration.UnitTests
         [Fact]
         public void ServiceEndpointBuildingCanBeCustomized()
         {
-            var source = new ConsulConfigurationSource();
-            source.MapService("myservice1", "serviceEndpoints:v1:myservice", new LambdaEndpointBuilder(s => $"http://{s.Nodes.First().Address}"));
+            var source = new ConsulConfigurationSource()
+                .UseCache(new InMemoryEmergencyCache())
+                .MapService("myservice1", "serviceEndpoints:v1:myservice", new LambdaEndpointBuilder(s => $"http://{s.Nodes.First().Address}"));
             
             var consulState = new ConsulState();
             consulState = consulState.UpdateService(new Service
