@@ -255,6 +255,11 @@ namespace ConsulRx
                         {
                             if (successfullyContactedConsulAtLeastOnce)
                             {
+                                //if an error occurred, we reset the index so that we can start clean
+                                //this is necessary because if the consul cluster was restarted it won't recognize
+                                //the old index and will block until the longPollMaxWait expires
+                                index = default(ulong);
+                                
                                 //if we have been successful at contacting consul already, then we will retry under the assumption that
                                 //things will eventually get healthy again
                                 eventContext["SecondsUntilRetry"] = _retryDelay?.Seconds ?? 0;
