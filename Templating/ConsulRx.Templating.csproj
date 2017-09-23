@@ -6,7 +6,6 @@
     <Version>0.1.0-alpha</Version>
     <Authors>Andy Alm</Authors>
     <Description>.NET API for executing templates that plug into Consul values and automatically update when consul values change.</Description>
-    <PackageTargetFallback>dotnet</PackageTargetFallback>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\ConsulRx\ConsulRx.csproj" />
