@@ -1,20 +1,64 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace ConsulRx.Configuration
 {
-    public class ServiceConfigMapping
+    public abstract class ServiceConfigMapping
     {
-        public ServiceConfigMapping(string configKey, string serviceName, IEndpointBuilder endpointBuilder)
+        protected ServiceConfigMapping(string configKey, string serviceName)
         {
             ConfigKey = configKey;
             ServiceName = serviceName;
-            EndpointBuilder = endpointBuilder;
         }
         
         public string ConfigKey { get; }
         public string ServiceName { get; }
-        public IEndpointBuilder EndpointBuilder { get; }
+
+        public abstract void BindToConfiguration(Service service, Dictionary<string, string> config);
+    }
+
+    public class SingleNodeServiceConfigMapping : ServiceConfigMapping
+    {
+        public SingleNodeServiceConfigMapping(string configKey, string serviceName, Func<ServiceNode, string> endpointFormatter, Func<ServiceNode[], ServiceNode> nodeSelector) : base(configKey, serviceName)
+        {
+            EndpointFormatter = endpointFormatter;
+            NodeSelector = nodeSelector;
+        }
+
+        private Func<ServiceNode, string> EndpointFormatter { get; }
+        private Func<ServiceNode[], ServiceNode> NodeSelector { get; }
+
+        public override void BindToConfiguration(Service service, Dictionary<string, string> config)
+        {
+            var selectedNode = NodeSelector(service.Nodes);
+
+            config[ConfigKey] = EndpointFormatter(selectedNode);
+        }
+    }
+
+    public class MultipleNodeServiceConfigMapping : ServiceConfigMapping
+    {
+        public MultipleNodeServiceConfigMapping(string configKey, string serviceName,
+            Func<ServiceNode,string> endpointFormatter,
+            Func<ServiceNode[], IEnumerable<ServiceNode>> nodeSelector = null) : base(configKey, serviceName)
+        {
+            EndpointFormatter = endpointFormatter ?? throw new ArgumentNullException(nameof(endpointFormatter));
+            NodeSelector = nodeSelector ?? (nodes => nodes);
+        }
+
+        private Func<ServiceNode[], IEnumerable<ServiceNode>> NodeSelector { get; }
+        private Func<ServiceNode, string> EndpointFormatter { get; }
+
+        public override void BindToConfiguration(Service service, Dictionary<string, string> config)
+        {
+            var selectedNodes = NodeSelector(service.Nodes).ToArray();
+            for (int i = 0; i < selectedNodes.Length; i++)
+            {
+                config[$"{ConfigKey}:{i}"] = EndpointFormatter(selectedNodes[i]);
+            }
+        }
     }
 
     public class ServiceConfigMappingCollection : KeyedCollection<string, ServiceConfigMapping>

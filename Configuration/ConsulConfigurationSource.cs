@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 
 namespace ConsulRx.Configuration
@@ -21,22 +22,31 @@ namespace ConsulRx.Configuration
         }
 
         public ConsulConfigurationSource MapService(string consulServiceName, string configKey,
-            Func<Service, string> endpointBuilder)
-        {
-            return MapService(consulServiceName, configKey, new LambdaEndpointBuilder(endpointBuilder));
-        }
-
-        public ConsulConfigurationSource MapHttpService(string consulServiceName, string configKey, string scheme = "http")
-        {
-            return MapService(consulServiceName, configKey, new HttpEndpointBuilder(scheme));
-        }
-
-        public ConsulConfigurationSource MapService(string consulServiceName, string configKey, IEndpointBuilder endpointBuilder = null)
+            Func<ServiceNode, string> endpointFormatter, Func<ServiceNode[], ServiceNode> nodeSelector)
         {
             _consulDependencies.Services.Add(consulServiceName);
-            _serviceConfigMappings.Add(new ServiceConfigMapping(configKey, consulServiceName, endpointBuilder ?? new SimpleEndpointBuilder()));
+            _serviceConfigMappings.Add(new SingleNodeServiceConfigMapping(configKey, consulServiceName, endpointFormatter, nodeSelector));
             
             return this;
+        }
+        
+        public ConsulConfigurationSource MapService(string consulServiceName, string configKey,
+            Func<ServiceNode, string> endpointFormatter, Func<ServiceNode[], IEnumerable<ServiceNode>> nodeSelector)
+        {
+            _consulDependencies.Services.Add(consulServiceName);
+            _serviceConfigMappings.Add(new MultipleNodeServiceConfigMapping(configKey, consulServiceName, endpointFormatter, nodeSelector));
+            
+            return this;
+        }
+
+        public ConsulConfigurationSource MapHttpService(string consulServiceName, string configKey)
+        {
+            return MapService(consulServiceName, configKey, EndpointFormatters.Http, NodeSelectors.First);
+        }
+        
+        public ConsulConfigurationSource MapHttpsService(string consulServiceName, string configKey)
+        {
+            return MapService(consulServiceName, configKey, EndpointFormatters.Https, NodeSelectors.First);
         }
 
         public ConsulConfigurationSource MapKeyPrefix(string consulKeyPrefix, string configKey)

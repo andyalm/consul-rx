@@ -115,8 +115,7 @@ namespace ConsulRx.Configuration
                 var service = _consulState.GetService(mapping.ServiceName);
                 if(service != null)
                 {
-                    var endpoint = mapping.EndpointBuilder.BuildEndpoint(service);
-                    data[mapping.ConfigKey] = endpoint;
+                    mapping.BindToConfiguration(service, data);
                 }
             }
         }
