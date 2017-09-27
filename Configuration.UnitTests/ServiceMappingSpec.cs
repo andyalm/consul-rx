@@ -65,6 +65,26 @@ namespace ConsulRx.Configuration.UnitTests
             configProvider.TryGet("serviceEndpoints:v1:myservice", out serviceEndpoint).Should().BeTrue();
             serviceEndpoint.Should().Be("http://myaddress");
         }
+        
+        [Fact]
+        public void NoRegisteredNodesThrowsWhenUsingFirstNodeSelector()
+        {
+            Assert.Throws<ConsulRxConfigurationException>(() =>
+            {
+                var source = new ConsulConfigurationSource()
+                    .UseCache(new InMemoryEmergencyCache())
+                    .MapService("missingservice", "serviceEndpoints:v1:myservice", EndpointFormatters.Http, NodeSelectors.First);
+            
+                var consulState = new ConsulState();
+                consulState = consulState.UpdateService(new Service
+                {
+                    Name = "missingservice",
+                    Nodes = new ServiceNode[0]
+                });
+
+                var configProvider = _consul.LoadConfigProvider(source, consulState);
+            });
+        }
 
         [Fact]
         public void ServiceEndpointsCanBeACollection()

@@ -17,7 +17,14 @@ namespace ConsulRx.Configuration
             return nodes[randomNodeIndex];
         };
         
-        public static Func<ServiceNode[], ServiceNode> First { get; } = nodes => nodes.FirstOrDefault();
+        public static Func<ServiceNode[], ServiceNode> First { get; } = nodes =>
+        {
+            var firstNode = nodes.FirstOrDefault();
+            if (firstNode == null)
+                throw new NodeSelectionException("Could not find any registered nodes");
+
+            return firstNode;
+        };
 
         public static Func<ServiceNode[], IEnumerable<ServiceNode>> Tag(string value)
         {

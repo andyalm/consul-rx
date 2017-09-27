@@ -32,9 +32,17 @@ namespace ConsulRx.Configuration
 
         public override void BindToConfiguration(Service service, Dictionary<string, string> config)
         {
-            var selectedNode = NodeSelector(service.Nodes);
+            try
+            {
+                var selectedNode = NodeSelector(service.Nodes);
 
-            config[ConfigKey] = EndpointFormatter(selectedNode);
+                config[ConfigKey] = EndpointFormatter(selectedNode);
+            }
+            catch (NodeSelectionException ex)
+            {
+                throw new ConsulRxConfigurationException($"An error occurred when selecting a node for the consul " +
+                                                         $"service {service.Name}: {ex.Message}", ex);
+            }
         }
     }
 
@@ -53,10 +61,18 @@ namespace ConsulRx.Configuration
 
         public override void BindToConfiguration(Service service, Dictionary<string, string> config)
         {
-            var selectedNodes = NodeSelector(service.Nodes).ToArray();
-            for (int i = 0; i < selectedNodes.Length; i++)
+            try
             {
-                config[$"{ConfigKey}:{i}"] = EndpointFormatter(selectedNodes[i]);
+                var selectedNodes = NodeSelector(service.Nodes).ToArray();
+                for (int i = 0; i < selectedNodes.Length; i++)
+                {
+                    config[$"{ConfigKey}:{i}"] = EndpointFormatter(selectedNodes[i]);
+                }
+            }
+            catch (NodeSelectionException ex)
+            {
+                throw new ConsulRxConfigurationException($"An error occurred when selecting a node for the consul " +
+                                                         $"service {service.Name}: {ex.Message}", ex);
             }
         }
     }
