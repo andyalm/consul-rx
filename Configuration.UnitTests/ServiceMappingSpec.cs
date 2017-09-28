@@ -63,7 +63,7 @@ namespace ConsulRx.Configuration.UnitTests
             
             string serviceEndpoint;
             configProvider.TryGet("serviceEndpoints:v1:myservice", out serviceEndpoint).Should().BeTrue();
-            serviceEndpoint.Should().Be("http://myaddress");
+            serviceEndpoint.Should().Be("http://myaddress:80");
         }
         
         [Fact]
