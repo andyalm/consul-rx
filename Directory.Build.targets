@@ -1,0 +1,11 @@
+<Project>
+  <Target Name="Push" Condition="$(GeneratePackageOnBuild)=='True'">
+    <PropertyGroup>
+      <PackageOutputPath>$(MSBuildProjectDirectory)\bin\Release\$(PackageId).$(PackageVersion).nupkg</PackageOutputPath>
+      <NuGetPushSource>https://api.nuget.org/v3/index.json</NuGetPushSource>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(PackageOutputPath)')" Text="The NuGet package '$(PackageOutputPath)' does not exist. Has it been built yet?" />
+    <Exec Command="dotnet nuget push --api-key $(NUGET_API_KEY) --source $(NuGetPushSource) $(PackageOutputPath)"
+          WorkingDirectory="$(MSBuildProjectDirectory)" />
+  </Target>
+</Project>

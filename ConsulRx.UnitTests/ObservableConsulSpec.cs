@@ -65,7 +65,7 @@ namespace ConsulRx.UnitTests
         }
         
         [Fact]
-        public async Task ServerErrorIsRetriedIfNotEncounteredAfterSucceedingBefore()
+        public async Task ServerErrorIsRetriedIfEncounteredAfterSucceedingBefore()
         {
             List<ServiceObservation> observations = new List<ServiceObservation>();
             List<Exception> errorObservations = new List<Exception>();
