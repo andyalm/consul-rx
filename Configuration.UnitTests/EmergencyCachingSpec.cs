@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
@@ -30,7 +31,7 @@ namespace ConsulRx.Configuration.UnitTests
             _consul = new ObservableConsul(_consulClient, retryDelay:_retryDelay);
             _configSource = new ConsulConfigurationSource()
                 .UseCache(_cache)
-                .RetryDelay(_retryDelay)
+                .AutoUpdate(_retryDelay)
                 .MapKeyPrefix("apps/myapp", "consul");
         }
         
@@ -96,6 +97,35 @@ namespace ConsulRx.Configuration.UnitTests
             
             configProvider.TryGet("consul:folder1:item1", out var value).Should().BeTrue();
             value.Should().Be("value1");
+        }
+
+        [Fact]
+        public async Task DependenciesAreNotObservedIfAutoUpdateIsDisabled()
+        {
+            _configSource.DoNotAutoUpdate();
+            
+            var configProvider = (ConsulConfigurationProvider) _configSource.Build(_consul);
+            await Task.WhenAll(configProvider.LoadAsync(), _consulClient.CompleteListAsync("apps/myapp",
+                new QueryResult<KVPair[]>
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Response = _successfulValues.Skip(1).ToArray()
+                }));
+
+            configProvider.TryGet("consul:folder1:item1", out var value).Should().BeFalse();
+            
+            await Task.Delay(_retryDelay + _retryDelay);
+
+            await _consulClient.CompleteListAsync("apps/myapp", new QueryResult<KVPair[]>
+            {
+                StatusCode = HttpStatusCode.OK,
+                Response = _successfulValues
+            });
+            
+            //give time for values to update
+            await Task.Delay(50);
+            
+            configProvider.TryGet("consul:folder1:item1", out value).Should().BeFalse();
         }
     }
 }

@@ -65,6 +65,39 @@ namespace ConsulRx.Configuration
             return this;
         }
 
+        /// <summary>
+        /// Configures an automatic update every 15 seconds
+        /// </summary>
+        /// <returns>
+        /// The same instance on which the method was called.
+        /// </returns>
+        public ConsulConfigurationSource AutoUpdate() =>
+            AutoUpdate(TimeSpan.FromSeconds(15));
+
+        /// <summary>
+        /// Configures a periodic, automatic update based on
+        /// <paramref name="retryDelay"/>.
+        /// </summary>
+        /// <param name="retryDelay">
+        /// The interval between configuration updates.
+        /// </param>
+        /// <returns>
+        /// The same instance on which the method was called.
+        /// </returns>
+        public ConsulConfigurationSource AutoUpdate(TimeSpan retryDelay)
+        {
+            _retryDelay = retryDelay;
+
+            return this;
+        }
+
+        internal ConsulConfigurationSource DoNotAutoUpdate()
+        {
+            _retryDelay = null;
+
+            return this;
+        }
+
         IConfigurationProvider IConfigurationSource.Build(IConfigurationBuilder builder)
         {
             var consulClient = new ObservableConsul(_consulConfig);
@@ -80,13 +113,6 @@ namespace ConsulRx.Configuration
         internal ConsulConfigurationSource UseCache(IEmergencyCache cache)
         {
             _cache = cache;
-
-            return this;
-        }
-
-        internal ConsulConfigurationSource RetryDelay(TimeSpan retryDelay)
-        {
-            _retryDelay = retryDelay;
 
             return this;
         }

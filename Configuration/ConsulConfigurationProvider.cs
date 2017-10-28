@@ -17,7 +17,7 @@ namespace ConsulRx.Configuration
         private readonly ServiceConfigMappingCollection _serviceConfigMappings;
         private readonly KVTreeConfigMappingCollection _kvTreeConfigMappings;
         private readonly KVItemConfigMappingCollection _kvItemConfigMappings;
-        private readonly TimeSpan _retryDelay;
+        private readonly TimeSpan? _retryDelay;
         private ConsulState _consulState;
 
         public ConsulConfigurationProvider(IObservableConsul consulClient,
@@ -34,7 +34,7 @@ namespace ConsulRx.Configuration
             _serviceConfigMappings = serviceConfigMappings;
             _kvTreeConfigMappings = kvTreeConfigMappings;
             _kvItemConfigMappings = kvItemConfigMappings;
-            _retryDelay = retryDelay ?? TimeSpan.FromSeconds(15);
+            _retryDelay = retryDelay;
         }
 
         public override void Load()
@@ -70,22 +70,25 @@ namespace ConsulRx.Configuration
                 eventContext.Dispose();
             }
 
-            _consulClient.ObserveDependencies(_dependencies).DelayedRetry(_retryDelay).Subscribe(updatedState =>
+            if (_retryDelay.HasValue)
             {
-                using (var reloadEventContext = new EventContext("ConsulRx.Configuration", "Reload"))
+                _consulClient.ObserveDependencies(_dependencies).DelayedRetry(_retryDelay.Value).Subscribe(updatedState =>
                 {
-                    try
+                    using (var reloadEventContext = new EventContext("ConsulRx.Configuration", "Reload"))
                     {
-                        _consulState = updatedState;
-                        UpdateData();
-                        OnReload();
+                        try
+                        {
+                            _consulState = updatedState;
+                            UpdateData();
+                            OnReload();
+                        }
+                        catch (Exception ex)
+                        {
+                            reloadEventContext.IncludeException(ex);
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        reloadEventContext.IncludeException(ex);
-                    }
-                }
-            });
+                });
+            }
         }
 
         private void UpdateData()
