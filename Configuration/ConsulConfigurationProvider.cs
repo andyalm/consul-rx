@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Spiffy.Monitoring;
@@ -70,7 +71,7 @@ namespace ConsulRx.Configuration
                 eventContext.Dispose();
             }
 
-            if (_retryDelay.HasValue)
+            if (_retryDelay.HasValue && _retryDelay != Timeout.InfiniteTimeSpan)
             {
                 _consulClient.ObserveDependencies(_dependencies).DelayedRetry(_retryDelay.Value).Subscribe(updatedState =>
                 {
