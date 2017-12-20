@@ -24,14 +24,17 @@ namespace ConsulRx.Configuration.UnitTests
             new KVPair("apps/myapp/folder1/item2") { Value = Encoding.UTF8.GetBytes("value2")}, 
             new KVPair("apps/myapp/folder2/item1") { Value = Encoding.UTF8.GetBytes("value3")}, 
         };
-        private TimeSpan _retryDelay = TimeSpan.FromMilliseconds(100);
+        private AutoUpdateOptions _autoUpdateOptions = new AutoUpdateOptions
+        {
+            UpdateMaxInterval = TimeSpan.FromMilliseconds(100)
+        };
 
         public EmergencyCachingSpec()
         {
-            _consul = new ObservableConsul(_consulClient, retryDelay:_retryDelay);
+            _consul = new ObservableConsul(_consulClient, retryDelay: TimeSpan.FromMilliseconds(200));
             _configSource = new ConsulConfigurationSource()
                 .UseCache(_cache)
-                .AutoUpdate(_retryDelay)
+                .AutoUpdate(_autoUpdateOptions)
                 .MapKeyPrefix("apps/myapp", "consul");
         }
         
@@ -114,7 +117,7 @@ namespace ConsulRx.Configuration.UnitTests
 
             configProvider.TryGet("consul:folder1:item1", out var value).Should().BeFalse();
             
-            await Task.Delay(_retryDelay + _retryDelay);
+            await Task.Delay(_autoUpdateOptions.UpdateMaxInterval + _autoUpdateOptions.UpdateMaxInterval);
 
             await _consulClient.CompleteListAsync("apps/myapp", new QueryResult<KVPair[]>
             {
