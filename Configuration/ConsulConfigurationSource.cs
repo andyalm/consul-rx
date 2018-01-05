@@ -24,6 +24,14 @@ namespace ConsulRx.Configuration
             return this;
         }
 
+        public ConsulConfigurationSource Endpoint(string consulEndpoint, string aclToken)
+        {
+            _consulConfig.Endpoint = consulEndpoint;
+            _consulConfig.AclToken = aclToken;
+
+            return this;
+        }
+
         public ConsulConfigurationSource MapService(string consulServiceName, string configKey,
             Func<ServiceNode, string> endpointFormatter, Func<ServiceNode[], ServiceNode> nodeSelector)
         {
