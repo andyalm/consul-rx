@@ -2,6 +2,8 @@
 [Oo]bj/
 .idea/
 .vs/
+.vscode/
 development.yml
 ConsulTemplate/Properties/launchSettings.json
 *.user
+*.userprefs

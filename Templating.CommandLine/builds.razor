@@ -1,0 +1,9 @@
+@{
+    var apps = @Property("apps").Split(",");
+}
+
+My apps:
+@foreach(var app in apps)
+{
+    @Partial("build", new { app })@:
+}

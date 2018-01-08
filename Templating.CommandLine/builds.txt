@@ -1,0 +1,4 @@
+
+My apps:
+Active build for search is 87707
+Active build for assetdetail is 87646
