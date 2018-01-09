@@ -21,7 +21,9 @@ namespace ConsulRx
             if (Result.Response == null)
                 return Enumerable.Empty<KeyValueNode>();
 
-            return Result.Response.Select(p => new KeyValueNode(p.Key, p.Value));
+            return Result.Response
+                .Where(p => p.Value != null) //no point in returning keys with null values. I believe these are just folder keys anyways.
+                .Select(p => new KeyValueNode(p.Key, p.Value));
         }
     }
 }

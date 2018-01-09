@@ -130,9 +130,8 @@ namespace ConsulRx.UnitTests
             });
             observations.Should().HaveCount(1);
             var kvNodes = observations[0].ToKeyValueNodes();
-            kvNodes.Should().HaveCount(2);
+            kvNodes.Should().HaveCount(1);
             kvNodes.Should().ContainSingle(n => n.FullKey == "apps/myapp/folder/key1").Which.Value.Should().Be("val1");
-            kvNodes.Should().ContainSingle(n => n.FullKey == "apps/myapp/folder").Which.Value.Should().BeNull();
         }
     }
 }
