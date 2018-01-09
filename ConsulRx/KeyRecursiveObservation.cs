@@ -21,7 +21,7 @@ namespace ConsulRx
             if (Result.Response == null)
                 return Enumerable.Empty<KeyValueNode>();
 
-            return Enumerable.Select<KVPair, KeyValueNode>(Result.Response, p => new KeyValueNode(p.Key, p.Value));
+            return Result.Response.Select(p => new KeyValueNode(p.Key, p.Value));
         }
     }
 }

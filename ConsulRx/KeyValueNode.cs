@@ -8,7 +8,7 @@ namespace ConsulRx
         public string FullKey { get; }
         public string Value { get; }
 
-        public KeyValueNode(string fullKey, byte[] value) : this(fullKey, Encoding.UTF8.GetString(value)) { }
+        public KeyValueNode(string fullKey, byte[] value) : this(fullKey, value == null ? null : Encoding.UTF8.GetString(value)) { }
 
         public KeyValueNode(string fullKey, string value)
         {

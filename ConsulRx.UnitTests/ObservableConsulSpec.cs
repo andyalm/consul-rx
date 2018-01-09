@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Consul;
 using ConsulRx.TestSupport;
 using FluentAssertions;
+using FluentAssertions.Common;
 using Xunit;
 
 namespace ConsulRx.UnitTests
@@ -105,6 +108,31 @@ namespace ConsulRx.UnitTests
             });
             errorObservations.Should().BeEmpty();
             observations.Should().HaveCount(2);
+        }
+
+        [Fact]
+        public async Task FolderKeysAreIgnoredWhenObservedViaKeysRecursive()
+        {
+            List<KeyRecursiveObservation> observations = new List<KeyRecursiveObservation>();
+            _observableConsul.ObserveKeyRecursive("apps/myapp").Subscribe(o => {
+                observations.Add(o);
+            });
+            await _consulClient.CompleteListAsync("apps/myapp", new QueryResult<KVPair[]>
+            {
+                StatusCode = HttpStatusCode.OK,
+                Response = new KVPair[] {
+                    new KVPair("apps/myapp/folder") { Value = null},
+                    new KVPair("apps/myapp/folder/key1")
+                    {
+                        Value = Encoding.UTF8.GetBytes("val1")
+                    }, 
+                }
+            });
+            observations.Should().HaveCount(1);
+            var kvNodes = observations[0].ToKeyValueNodes();
+            kvNodes.Should().HaveCount(2);
+            kvNodes.Should().ContainSingle(n => n.FullKey == "apps/myapp/folder/key1").Which.Value.Should().Be("val1");
+            kvNodes.Should().ContainSingle(n => n.FullKey == "apps/myapp/folder").Which.Value.Should().BeNull();
         }
     }
 }
