@@ -2,52 +2,46 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Reactive.Subjects;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Consul;
 using ConsulRx.TestSupport;
 using FluentAssertions;
+using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using Xunit;
 
 namespace ConsulRx.Configuration.UnitTests
 {
     public class EmergencyCachingSpec
     {
-        private readonly FakeConsulClient _consulClient = new FakeConsulClient();
-        private readonly IObservableConsul _consul;
         private readonly InMemoryEmergencyCache _cache = new InMemoryEmergencyCache();
         private readonly ConsulConfigurationSource _configSource;
-        private readonly KVPair[] _successfulValues = new[]
-        {
-            new KVPair("apps/myapp/folder1/item1") { Value = Encoding.UTF8.GetBytes("value1")}, 
-            new KVPair("apps/myapp/folder1/item2") { Value = Encoding.UTF8.GetBytes("value2")}, 
-            new KVPair("apps/myapp/folder2/item1") { Value = Encoding.UTF8.GetBytes("value3")}, 
-        };
-        private AutoUpdateOptions _autoUpdateOptions = new AutoUpdateOptions
-        {
-            UpdateMaxInterval = TimeSpan.FromMilliseconds(100)
-        };
 
         public EmergencyCachingSpec()
         {
-            _consul = new ObservableConsul(_consulClient, retryDelay: TimeSpan.FromMilliseconds(200));
             _configSource = new ConsulConfigurationSource()
                 .UseCache(_cache)
-                .AutoUpdate(_autoUpdateOptions)
                 .MapKeyPrefix("apps/myapp", "consul");
         }
         
         [Fact]
         public async Task SettingsSuccessfullyRetrievedFromConsulAreCachedInLocalCache()
         {
-            var configProvider = (ConsulConfigurationProvider) _configSource.Build(_consul);
-            await Task.WhenAll(configProvider.LoadAsync(), _consulClient.CompleteListAsync("apps/myapp",
-                new QueryResult<KVPair[]>
-                {
-                    StatusCode = HttpStatusCode.OK,
-                    Response = _successfulValues
-                }));
+            var consul = new FakeObservableConsul();
+            
+            var configProvider = (ConsulConfigurationProvider) _configSource.Build(consul);
+
+            consul.CurrentState = consul.CurrentState.UpdateKVNodes(new[]
+            {
+                new KeyValueNode("apps/myapp/folder1/item1", "value1"),
+                new KeyValueNode("apps/myapp/folder1/item2", "value2"),
+                new KeyValueNode("apps/myapp/folder2/item1", "value3")
+            });
+
+            await configProvider.LoadAsync();
 
             _cache.CachedSettings.Should().NotBeNull();
             _cache.CachedSettings.Should().NotBeEmpty();
@@ -63,38 +57,40 @@ namespace ConsulRx.Configuration.UnitTests
             {
                 {"consul:folder1:item1", "cachedvalue"}
             };
+
+            var consul = Substitute.For<IObservableConsul>();
+            consul.GetDependenciesAsync(null)
+                .ThrowsForAnyArgs(
+                    new ConsulErrorException(new QueryResult {StatusCode = HttpStatusCode.InternalServerError}));
             
-            var configProvider = (ConsulConfigurationProvider) _configSource.Build(_consul);
-            await Task.WhenAll(configProvider.LoadAsync(), _consulClient.CompleteListAsync("apps/myapp",
-                new QueryResult<KVPair[]>
-                {
-                    StatusCode = HttpStatusCode.InternalServerError
-                }));
+            var configProvider = (ConsulConfigurationProvider) _configSource.Build(consul);
+            await configProvider.LoadAsync();
             
             configProvider.TryGet("consul:folder1:item1", out var value).Should().BeTrue();
             value.Should().Be("cachedvalue");
         }
 
         [Fact]
-        public async Task ObserveDependenciesIsRetriedAfterLoadingFromEmergencyCache()
+        public async Task ObserveDependenciesIsRetriedAfterLoadingFromEmergencyCacheIfAutoUpdateIsOn()
         {
             _cache.CachedSettings = new Dictionary<string, string>
             {
                 {"consul:folder1:item1", "cachedvalue"}
             };
+
+            var consul = Substitute.For<IObservableConsul>();
+            consul.Configuration.Returns(new ObservableConsulConfiguration());
+            var dependencySubject = new Subject<ConsulState>();
+            consul.GetDependenciesAsync(null)
+                .ThrowsForAnyArgs(
+                    new ConsulErrorException(new QueryResult {StatusCode = HttpStatusCode.InternalServerError}));
+            consul.ObserveDependencies(null).ReturnsForAnyArgs(dependencySubject);
             
-            var configProvider = (ConsulConfigurationProvider) _configSource.Build(_consul);
-            await Task.WhenAll(configProvider.LoadAsync(), _consulClient.CompleteListAsync("apps/myapp",
-                new QueryResult<KVPair[]>
-                {
-                    StatusCode = HttpStatusCode.InternalServerError
-                }));
-            await Task.Delay(250);
-            await _consulClient.CompleteListAsync("apps/myapp", new QueryResult<KVPair[]>
-            {
-                StatusCode = HttpStatusCode.OK,
-                Response = _successfulValues
-            });
+            var configProvider = (ConsulConfigurationProvider) _configSource.AutoUpdate().Build(consul);
+            await configProvider.LoadAsync();
+            
+            dependencySubject.OnNext(new ConsulState().UpdateKVNode(new KeyValueNode("apps/myapp/folder1/item1", "value1")));
+            
             //give time for values to update
             await Task.Delay(50);
             
@@ -105,30 +101,14 @@ namespace ConsulRx.Configuration.UnitTests
         [Fact]
         public async Task DependenciesAreNotObservedIfAutoUpdateIsDisabled()
         {
-            _configSource.DoNotAutoUpdate();
-            
-            var configProvider = (ConsulConfigurationProvider) _configSource.Build(_consul);
-            await Task.WhenAll(configProvider.LoadAsync(), _consulClient.CompleteListAsync("apps/myapp",
-                new QueryResult<KVPair[]>
-                {
-                    StatusCode = HttpStatusCode.OK,
-                    Response = _successfulValues.Skip(1).ToArray()
-                }));
+            var consul = Substitute.For<IObservableConsul>();
+            consul.GetDependenciesAsync(null)
+                .ReturnsForAnyArgs(
+                    new ConsulState().UpdateKVNode(new KeyValueNode("apps/myapp/folder1/item1", "value1")));
+            var configProvider = (ConsulConfigurationProvider) _configSource.Build(consul);
+            await configProvider.LoadAsync();
 
-            configProvider.TryGet("consul:folder1:item1", out var value).Should().BeFalse();
-            
-            await Task.Delay(_autoUpdateOptions.UpdateMaxInterval + _autoUpdateOptions.UpdateMaxInterval);
-
-            await _consulClient.CompleteListAsync("apps/myapp", new QueryResult<KVPair[]>
-            {
-                StatusCode = HttpStatusCode.OK,
-                Response = _successfulValues
-            });
-            
-            //give time for values to update
-            await Task.Delay(50);
-            
-            configProvider.TryGet("consul:folder1:item1", out value).Should().BeFalse();
+            consul.DidNotReceiveWithAnyArgs().ObserveDependencies(null);
         }
     }
 }

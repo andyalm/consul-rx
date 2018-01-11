@@ -7,15 +7,13 @@ namespace ConsulRx.Configuration
 {
     public class ConsulConfigurationSource : IConfigurationSource
     {
-        private readonly ObservableConsulConfiguration _consulConfig = new ObservableConsulConfiguration
-        {
-            RetryDelay = null
-        };
+        private readonly ObservableConsulConfiguration _consulConfig = new ObservableConsulConfiguration();
         private readonly ConsulDependencies _consulDependencies = new ConsulDependencies();
         private readonly ServiceConfigMappingCollection _serviceConfigMappings = new ServiceConfigMappingCollection();
         private readonly KVTreeConfigMappingCollection _kvTreeConfigMappings = new KVTreeConfigMappingCollection();
         private readonly KVItemConfigMappingCollection _kvItemConfigMappings = new KVItemConfigMappingCollection();
         private IEmergencyCache _cache = new FileSystemEmergencyCache();
+        private bool _autoUpdate = false;
         
         public ConsulConfigurationSource Endpoint(string consulEndpoint)
         {
@@ -88,18 +86,11 @@ namespace ConsulRx.Configuration
         /// </returns>
         public ConsulConfigurationSource AutoUpdate(AutoUpdateOptions options = null)
         {
+            _autoUpdate = true;
             options = options ?? new AutoUpdateOptions();
-
+            
             _consulConfig.RetryDelay = options.ErrorRetryInterval;
-
             _consulConfig.LongPollMaxWait = options.UpdateMaxInterval;
-
-            return this;
-        }
-
-        internal ConsulConfigurationSource DoNotAutoUpdate()
-        {
-            AutoUpdate(new NeverAutoUpdateOptions());
 
             return this;
         }
@@ -113,7 +104,7 @@ namespace ConsulRx.Configuration
 
         internal IConfigurationProvider Build(IObservableConsul consulClient)
         {
-            return new ConsulConfigurationProvider(consulClient, _cache, _consulDependencies, _serviceConfigMappings, _kvTreeConfigMappings, _kvItemConfigMappings, _consulConfig.RetryDelay);
+            return new ConsulConfigurationProvider(consulClient, _cache, _consulDependencies, _serviceConfigMappings, _kvTreeConfigMappings, _kvItemConfigMappings, _autoUpdate);
         }
 
         internal ConsulConfigurationSource UseCache(IEmergencyCache cache)
@@ -121,16 +112,6 @@ namespace ConsulRx.Configuration
             _cache = cache;
 
             return this;
-        }
-
-        private class NeverAutoUpdateOptions : AutoUpdateOptions
-        {
-            public NeverAutoUpdateOptions()
-            {
-                ErrorRetryInterval = Timeout.InfiniteTimeSpan;
-
-                UpdateMaxInterval = Timeout.InfiniteTimeSpan;
-            }
         }
     }
 

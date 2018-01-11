@@ -18,7 +18,7 @@ namespace ConsulRx.Configuration
         private readonly ServiceConfigMappingCollection _serviceConfigMappings;
         private readonly KVTreeConfigMappingCollection _kvTreeConfigMappings;
         private readonly KVItemConfigMappingCollection _kvItemConfigMappings;
-        private readonly TimeSpan? _retryDelay;
+        private readonly bool _autoUpdate;
         private ConsulState _consulState;
 
         public ConsulConfigurationProvider(IObservableConsul consulClient,
@@ -27,7 +27,7 @@ namespace ConsulRx.Configuration
             ServiceConfigMappingCollection serviceConfigMappings,
             KVTreeConfigMappingCollection kvTreeConfigMappings,
             KVItemConfigMappingCollection kvItemConfigMappings,
-            TimeSpan? retryDelay = null)
+            bool autoUpdate)
         {
             _consulClient = consulClient;
             _emergencyCache = emergencyCache;
@@ -35,7 +35,7 @@ namespace ConsulRx.Configuration
             _serviceConfigMappings = serviceConfigMappings;
             _kvTreeConfigMappings = kvTreeConfigMappings;
             _kvItemConfigMappings = kvItemConfigMappings;
-            _retryDelay = retryDelay;
+            _autoUpdate = autoUpdate;
         }
 
         public override void Load()
@@ -48,7 +48,7 @@ namespace ConsulRx.Configuration
             var eventContext = new EventContext("ConsulRx.Configuration", "Load");
             try
             {
-                _consulState = await _consulClient.ObserveDependencies(_dependencies).FirstAsync().ToTask();
+                _consulState = await _consulClient.GetDependenciesAsync(_dependencies);
                 UpdateData();
                 eventContext["LoadedFrom"] = "Consul";
             }
@@ -71,9 +71,9 @@ namespace ConsulRx.Configuration
                 eventContext.Dispose();
             }
 
-            if (_retryDelay.HasValue && _retryDelay != Timeout.InfiniteTimeSpan)
+            if (_autoUpdate)
             {
-                _consulClient.ObserveDependencies(_dependencies).DelayedRetry(_retryDelay.Value).Subscribe(updatedState =>
+                _consulClient.ObserveDependencies(_dependencies).DelayedRetry(_consulClient.Configuration.RetryDelay ?? TimeSpan.Zero).Subscribe(updatedState =>
                 {
                     using (var reloadEventContext = new EventContext("ConsulRx.Configuration", "Reload"))
                     {
