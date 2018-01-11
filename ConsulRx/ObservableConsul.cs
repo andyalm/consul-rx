@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Net;
 using System.Reactive.Disposables;
@@ -52,6 +53,22 @@ namespace ConsulRx
                 });
         }
 
+        public async Task<Service> GetServiceAsync(string serviceName)
+        {
+            var result = await CallConsulAsync(() => _client.Catalog.Service(serviceName, null, QueryOptions(0)), 
+                "GetService", new Dictionary<string, object>
+                {
+                    {"ServiceName",serviceName}
+                });
+
+            if (result.Response == null || result.Response.Length == 0)
+            {
+                return null;
+            }
+            
+            return new ServiceObservation(serviceName, result).ToService();
+        }
+
         public IObservable<KeyObservation> ObserveKey(string key)
         {
             return LongPoll(index => _client.KV.Get(key, QueryOptions(index)), result => new KeyObservation(key, result),
@@ -61,6 +78,22 @@ namespace ConsulRx
                 });
         }
 
+        public async Task<KeyValueNode> GetKeyAsync(string key)
+        {
+            var result = await CallConsulAsync(() => _client.KV.Get(key, QueryOptions(0)),
+                "GetKey", new Dictionary<string, object>
+                {
+                    {"Key", key}
+                });
+
+            if (result.Response == null)
+            {
+                return null;
+            }
+            
+            return new KeyObservation(key, result).ToKeyValueNode();
+        }
+
         public IObservable<KeyRecursiveObservation> ObserveKeyRecursive(string prefix)
         {
             return LongPoll(index => _client.KV.List(prefix, QueryOptions(index)), result => new KeyRecursiveObservation(prefix, result),
@@ -68,6 +101,41 @@ namespace ConsulRx
                 {
                     {"KeyPrefix", prefix}
                 });
+        }
+
+        public async Task<IEnumerable<KeyValueNode>> GetKeyRecursiveAsync(string prefix)
+        {
+            var result = await CallConsulAsync(() => _client.KV.List(prefix, QueryOptions(0)),
+                "GetKeys", new Dictionary<string, object>
+                {
+                    {"KeyPrefix", prefix}
+                });
+            
+            return new KeyRecursiveObservation(prefix, result).ToKeyValueNodes();
+        }
+
+        public async Task<ConsulState> GetDependenciesAsync(ConsulDependencies dependencies)
+        {
+            var serviceTasks = dependencies.Services.Select(GetServiceAsync);
+            var keyTasks = dependencies.Keys.Select(GetKeyAsync);
+            var keyRecursiveTasks = dependencies.KeyPrefixes.Select(GetKeyRecursiveAsync);
+
+            await Task.WhenAll(serviceTasks.Cast<Task>().Concat(keyTasks).Concat(keyRecursiveTasks));
+
+            var services = serviceTasks.Select(t => t.Result)
+                .Where(s => s != null)
+                .ToImmutableDictionary(s => s.Name);
+            
+            var keys = new KeyValueStore(keyTasks
+                .Select(t => t.Result)
+                .Where(k => k != null)
+                .Concat(keyRecursiveTasks.SelectMany(t => t.Result)));
+
+            var missingKeyPrefixes = dependencies.KeyPrefixes
+                .Where(prefix => !keys.ContainsKeyStartingWith(prefix))
+                .ToImmutableHashSet();
+            
+            return new ConsulState(services, keys, missingKeyPrefixes);
         }
 
         public IObservable<ConsulState> ObserveDependencies(ConsulDependencies dependencies)
@@ -200,6 +268,32 @@ namespace ConsulRx
         
         private static readonly HashSet<HttpStatusCode> HealthyCodes = new HashSet<HttpStatusCode>{HttpStatusCode.OK, HttpStatusCode.NotFound};
 
+        private async Task<QueryResult<TResponse>> CallConsulAsync<TResponse>(Func<Task<QueryResult<TResponse>>> call,
+            string monitoringOperation, IDictionary<string, object> monitoringProperties)
+        {
+            using (var eventContext = new EventContext("ConsulRx.Client", monitoringOperation))
+            {
+                eventContext.AddValues(monitoringProperties);
+                try
+                {
+                    var result = await call();
+                    eventContext.IncludeConsulResult(result);
+                    if (!HealthyCodes.Contains(result.StatusCode))
+                    {
+                        //if we got an error that indicates either server or client aren't healthy (e.g. 500 or 403)
+                        //then model this as an exception (same as if server can't be contacted). We will figure out what to do below
+                        throw new ConsulErrorException(result);
+                    }
+                    return result;
+                }
+                catch (Exception ex)
+                {
+                    eventContext.IncludeException(ex);
+                    throw;
+                }
+            }
+        }
+        
         private IObservable<TObservation> LongPoll<TResponse,TObservation>(Func<ulong,Task<QueryResult<TResponse>>> poll, Func<QueryResult<TResponse>,TObservation> toObservation, string monitoringOperation, IDictionary<string,object> monitoringProperties) where TObservation : class
         {
             return Observable.Create<TObservation>(async (o, cancel) =>

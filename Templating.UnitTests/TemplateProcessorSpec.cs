@@ -36,7 +36,7 @@ namespace ConsulRx.Templating.UnitTests
             _consulDependencies.Services.Add("myservice1");
             CreateProcessor().Start();
             VerifyRenderIsCalled(Times.Never());
-            _consul.Dependencies.OnNext(new ConsulState());
+            _consul.DependencyObservations.OnNext(new ConsulState());
             VerifyRenderIsCalled(Times.Once());
         }
 
