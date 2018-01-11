@@ -15,6 +15,7 @@ namespace ConsulRx.Configuration.TestHarness
                 .AddConsul(consul =>
                 {
                     consul
+                        .AutoUpdate()
                         .MapHttpService("service1-http", "serviceEndpoints:service1")
                         .MapHttpService("service2-http", "serviceEndpoints:service2")
                         .MapKeyPrefix("apps/harness", "consul")

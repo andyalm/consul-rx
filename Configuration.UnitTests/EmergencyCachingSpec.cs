@@ -79,6 +79,7 @@ namespace ConsulRx.Configuration.UnitTests
             };
 
             var consul = Substitute.For<IObservableConsul>();
+            consul.Configuration.Returns(new ObservableConsulConfiguration());
             var dependencySubject = new Subject<ConsulState>();
             consul.GetDependenciesAsync(null)
                 .ThrowsForAnyArgs(

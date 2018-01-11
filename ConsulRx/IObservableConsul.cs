@@ -17,5 +17,7 @@ namespace ConsulRx
         
         IObservable<ConsulState> ObserveDependencies(ConsulDependencies dependencies);
         Task<ConsulState> GetDependenciesAsync(ConsulDependencies dependencies);
+        
+        ObservableConsulConfiguration Configuration { get; }
     }
 }

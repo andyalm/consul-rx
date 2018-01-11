@@ -14,22 +14,25 @@ namespace ConsulRx
     public class ObservableConsul : IObservableConsul
     {
         private readonly IConsulClient _client;
-        private readonly TimeSpan? _longPollMaxWait;
-        private readonly TimeSpan? _retryDelay;
-        private readonly string _aclToken;
+        private readonly ObservableConsulConfiguration _configuration;
 
         public ObservableConsul(IConsulClient client, TimeSpan? longPollMaxWait = null, TimeSpan? retryDelay = null, string aclToken = null)
         {
             _client = client;
-            _longPollMaxWait = longPollMaxWait;
-            _retryDelay = retryDelay;
-            _aclToken = aclToken;
+            _configuration = new ObservableConsulConfiguration
+            {
+                AclToken = aclToken,
+                LongPollMaxWait = longPollMaxWait,
+                RetryDelay = retryDelay
+            };
         }
 
         public ObservableConsul(ObservableConsulConfiguration config)
         {
             if(config == null)
                 throw new ArgumentNullException(nameof(config));
+
+            _configuration = config;
 
             _client = new ConsulClient(c =>
             {
@@ -38,10 +41,11 @@ namespace ConsulRx
                 if(!string.IsNullOrEmpty(config.Datacenter))
                     c.Datacenter = config.Datacenter;
             });
-            _longPollMaxWait = config.LongPollMaxWait;
-            _retryDelay = config.RetryDelay;
-            _aclToken = config.AclToken;
         }
+
+        public ObservableConsulConfiguration Configuration => _configuration;
+
+        private TimeSpan? RetryDelay => Configuration.RetryDelay;
 
         public IObservable<ServiceObservation> ObserveService(string serviceName)
         {
@@ -260,9 +264,9 @@ namespace ConsulRx
         {
             return new QueryOptions
             {
-                Token = _aclToken ?? "anonymous",
+                Token = _configuration.AclToken ?? "anonymous",
                 WaitIndex = index,
-                WaitTime = _longPollMaxWait
+                WaitTime = _configuration.LongPollMaxWait
             };
         }
         
@@ -356,10 +360,10 @@ namespace ConsulRx
                                 
                                 //if we have been successful at contacting consul already, then we will retry under the assumption that
                                 //things will eventually get healthy again
-                                eventContext["SecondsUntilRetry"] = _retryDelay?.Seconds ?? 0;
-                                if (_retryDelay != null)
+                                eventContext["SecondsUntilRetry"] = RetryDelay?.Seconds ?? 0;
+                                if (RetryDelay != null)
                                 {
-                                    await Task.Delay(_retryDelay.Value, cancel);
+                                    await Task.Delay(RetryDelay.Value, cancel);
                                 }
                             }
                             else

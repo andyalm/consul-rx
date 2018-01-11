@@ -21,6 +21,8 @@ namespace ConsulRx.TestSupport
 
         public ConsulState CurrentState { get; set; } = new ConsulState();
         
+        public ObservableConsulConfiguration Configuration { get; } = new ObservableConsulConfiguration();
+        
         public Task<Service> GetServiceAsync(string serviceName)
         {
             var service = CurrentState.GetService(serviceName);
