@@ -14,6 +14,16 @@ namespace ConsulRx.Configuration
         private readonly KVItemConfigMappingCollection _kvItemConfigMappings = new KVItemConfigMappingCollection();
         private IEmergencyCache _cache = new FileSystemEmergencyCache();
         private bool _autoUpdate = false;
+
+        public ConsulConfigurationSource()
+        {
+            var autoUpdateEnv = Environment.GetEnvironmentVariable("CONSULRX_AUTO_UPDATE");
+            if(autoUpdateEnv != null &&
+               (autoUpdateEnv.Equals("1") || autoUpdateEnv.Equals("true", StringComparison.OrdinalIgnoreCase)))
+            {
+                AutoUpdate();
+            }
+        }
         
         public ConsulConfigurationSource Endpoint(string consulEndpoint)
         {
