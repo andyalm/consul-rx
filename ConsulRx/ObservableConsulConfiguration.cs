@@ -1,4 +1,5 @@
 using System;
+using Consul;
 
 namespace ConsulRx
 {
@@ -21,5 +22,6 @@ namespace ConsulRx
         public string AclToken { get; set; }
         public TimeSpan? LongPollMaxWait { get; set; }
         public TimeSpan? RetryDelay { get; set; } = Defaults.ErrorRetryInterval;
+        public ConsistencyMode ConsistencyMode { get; set; } = ConsistencyMode.Default;
     }
 }

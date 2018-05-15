@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using Consul;
 using Microsoft.Extensions.Configuration;
 
 namespace ConsulRx.Configuration
@@ -36,6 +37,13 @@ namespace ConsulRx.Configuration
         {
             _consulConfig.Endpoint = consulEndpoint;
             _consulConfig.AclToken = aclToken;
+
+            return this;
+        }
+
+        public ConsulConfigurationSource ConsistencyMode(ConsistencyMode consistencyMode)
+        {
+            _consulConfig.ConsistencyMode = consistencyMode;
 
             return this;
         }

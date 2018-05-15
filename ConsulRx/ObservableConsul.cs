@@ -266,7 +266,8 @@ namespace ConsulRx
             {
                 Token = _configuration.AclToken ?? "anonymous",
                 WaitIndex = index,
-                WaitTime = _configuration.LongPollMaxWait
+                WaitTime = _configuration.LongPollMaxWait,
+                Consistency = _configuration.ConsistencyMode
             };
         }
         
