@@ -14,7 +14,7 @@ master build:
     name: dotnet-consul-template
     when: on_success
     paths: 
-    - artifacts/dotnet-consul-template
+    - artifacts/dotnet-consul-template/**
   only:
   - master
   
