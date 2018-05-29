@@ -15,6 +15,7 @@ master build:
     when: on_success
     paths: 
     - artifacts/dotnet-consul-template/**
+    - *.nupkg
   only:
   - master
   
