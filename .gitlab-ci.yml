@@ -1,0 +1,19 @@
+stages:
+- build
+  
+master build:
+  stage: build
+  image: microsoft/dotnet:2.0-sdk
+  script:
+  - dotnet build
+  only:
+  - master
+  
+ci build:
+  stage: build
+  image: microsoft/dotnet:2.0-sdk
+  script:
+  - dotnet build
+  except:
+  - tags
+  - master 
