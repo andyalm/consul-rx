@@ -9,13 +9,14 @@ master build:
   image: microsoft/dotnet:2.0-sdk
   script:
   - ./build.sh
-  - dotnet publish -r linux-x64 -o $PWD/artifacts/dotnet-consul-template/linux-x64 Templating.CommandLine/ConsulRx.Templating.CommandLine.csproj
+  - dotnet publish -r linux-x64 -o $PWD/artifacts/consulrx-template/linux-x64 Templating.CommandLine/ConsulRx.Templating.CommandLine.csproj
+  - mkdir artifacts/packages
+  - 'cp */bin/Release/*.nupkg ./artifacts/packages'
   artifacts:
-    name: 'consul-rx-$CI_PIPELINE_ID'
+    name: 'consulrx-$CI_PIPELINE_ID'
     when: on_success
     paths: 
-    - artifacts/dotnet-consul-template
-    - '*/bin/Release/*.nupkg'
+    - artifacts
   only:
   - master
   
