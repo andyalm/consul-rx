@@ -20,7 +20,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		README.md = README.md
 		Directory.Build.targets = Directory.Build.targets
-        .gitlab-ci.yml = .gitlab-ci.yml
+								.gitlab-ci.yml = .gitlab-ci.yml
+		build.sh = build.sh
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsulRx.UnitTests", "ConsulRx.UnitTests\ConsulRx.UnitTests.csproj", "{A41D94C5-85D2-46ED-8BA9-FE0412D63130}"

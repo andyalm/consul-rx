@@ -5,7 +5,7 @@ master build:
   stage: build
   image: microsoft/dotnet:2.0-sdk
   script:
-  - dotnet build
+  - ./build.sh
   only:
   - master
   
@@ -13,7 +13,14 @@ ci build:
   stage: build
   image: microsoft/dotnet:2.0-sdk
   script:
-  - dotnet build
+  - ./build.sh
+  - dotnet publish -r linux-x64 -o artifacts/dotnet-consul-template/linux-x64 Templating.CommandLine/ConsulRx.Templating
+  .CommandLine.csproj
+  artifacts:
+    name: dotnet-consul-template
+    when: on_success
+    path: 
+    - artifacts/dotnet-consul-template
   except:
   - tags
-  - master 
+  - master
