@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using Microsoft.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Configuration;
 
@@ -19,7 +18,7 @@ namespace ConsulRx.Templating.CommandLine
 
             var app = new CommandLineApplication
             {
-                Name = "dotnet-consul-template"
+                Name = "consul-rx-template"
             };
             var help = app.HelpOption("-h|--help");
             var consulEndpoint = app.Option("-e|--consul-endpoint", "The HTTP endpoint for consul", CommandOptionType.SingleValue);

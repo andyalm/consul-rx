@@ -5,6 +5,7 @@
     <PreserveCompilationContext>true</PreserveCompilationContext>
     <AssemblyName>consul-rx-template</AssemblyName>
     <TrimUnusedDependencies>true</TrimUnusedDependencies>
+    <LangVersion>7.1</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Templating\ConsulRx.Templating.csproj" />
