@@ -1,9 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reactive.Linq;
-using System.Reactive.Threading.Tasks;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Spiffy.Monitoring;
@@ -40,7 +36,7 @@ namespace ConsulRx.Configuration
 
         public override void Load()
         {
-            LoadAsync().GetAwaiter().GetResult();
+            LoadAsync().ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         public async Task LoadAsync()

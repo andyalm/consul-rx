@@ -15,12 +15,12 @@ using Xunit;
 
 namespace ConsulRx.Configuration.UnitTests
 {
-    public class EmergencyCachingSpec
+    public class ConfigurationLoadingSpec
     {
         private readonly InMemoryEmergencyCache _cache = new InMemoryEmergencyCache();
         private readonly ConsulConfigurationSource _configSource;
 
-        public EmergencyCachingSpec()
+        public ConfigurationLoadingSpec()
         {
             _configSource = new ConsulConfigurationSource()
                 .UseCache(_cache)
