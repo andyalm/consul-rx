@@ -44,7 +44,7 @@ namespace ConsulRx.Configuration
             var eventContext = new EventContext("ConsulRx.Configuration", "Load");
             try
             {
-                _consulState = await _consulClient.GetDependenciesAsync(_dependencies);
+                _consulState = await _consulClient.GetDependenciesAsync(_dependencies).ConfigureAwait(false);
                 UpdateData();
                 eventContext["LoadedFrom"] = "Consul";
             }
