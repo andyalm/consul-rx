@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard1.4</TargetFramework>
-    <Version>1.0.1-beta01</Version>
+    <Version>1.0.1</Version>
     <Description>A library for consuming consul values in a continuous stream using the Reactive 
     Extensions</Description>
     <Copyright>2017-2018</Copyright>
@@ -11,7 +11,7 @@
     <PackageLicenseUrl>http://opensource.org/licenses/MIT</PackageLicenseUrl>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageReleaseNotes>
-      Added support for specifying a ConsistencyMode when querying consul
+      Fixed a deadlock when running in a SynchronizationContext
     </PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
