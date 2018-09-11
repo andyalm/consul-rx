@@ -63,7 +63,7 @@ namespace ConsulRx
                 "GetService", new Dictionary<string, object>
                 {
                     {"ServiceName",serviceName}
-                });
+                }).ConfigureAwait(false);
 
             if (result.Response == null || result.Response.Length == 0)
             {
@@ -88,7 +88,7 @@ namespace ConsulRx
                 "GetKey", new Dictionary<string, object>
                 {
                     {"Key", key}
-                });
+                }).ConfigureAwait(false);
 
             if (result.Response == null)
             {
@@ -113,7 +113,7 @@ namespace ConsulRx
                 "GetKeys", new Dictionary<string, object>
                 {
                     {"KeyPrefix", prefix}
-                });
+                }).ConfigureAwait(false);
             
             return new KeyRecursiveObservation(prefix, result).ToKeyValueNodes();
         }
@@ -124,7 +124,7 @@ namespace ConsulRx
             var keyTasks = dependencies.Keys.Select(GetKeyAsync);
             var keyRecursiveTasks = dependencies.KeyPrefixes.Select(GetKeyRecursiveAsync);
 
-            await Task.WhenAll(serviceTasks.Cast<Task>().Concat(keyTasks).Concat(keyRecursiveTasks));
+            await Task.WhenAll(serviceTasks.Cast<Task>().Concat(keyTasks).Concat(keyRecursiveTasks)).ConfigureAwait(false);
 
             var services = serviceTasks.Select(t => t.Result)
                 .Where(s => s != null)
@@ -281,7 +281,7 @@ namespace ConsulRx
                 eventContext.AddValues(monitoringProperties);
                 try
                 {
-                    var result = await call();
+                    var result = await call().ConfigureAwait(false);
                     eventContext.IncludeConsulResult(result);
                     if (!HealthyCodes.Contains(result.StatusCode))
                     {
@@ -315,7 +315,7 @@ namespace ConsulRx
                         Exception exception = null;
                         try
                         {
-                            result = await poll(index);
+                            result = await poll(index).ConfigureAwait(false);
                         }
                         catch (Exception ex)
                         {
@@ -364,7 +364,7 @@ namespace ConsulRx
                                 eventContext["SecondsUntilRetry"] = RetryDelay?.Seconds ?? 0;
                                 if (RetryDelay != null)
                                 {
-                                    await Task.Delay(RetryDelay.Value, cancel);
+                                    await Task.Delay(RetryDelay.Value, cancel).ConfigureAwait(false);
                                 }
                             }
                             else
