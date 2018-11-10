@@ -3,6 +3,7 @@ stages:
 
 variables:
   Configuration: Release
+  NoSourceLink: true
   
 master build:
   stage: build
