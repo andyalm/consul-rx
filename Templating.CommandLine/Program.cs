@@ -27,7 +27,7 @@ namespace ConsulRx.Templating.CommandLine
             var properties = app.Option("-p|--properties",
                 "The template properties to pass to the templates in the format name=value",
                 CommandOptionType.MultipleValue);
-            app.OnExecute(() =>
+            app.OnExecute(async () =>
             {
                 if (help.HasValue())
                 {
@@ -49,7 +49,7 @@ namespace ConsulRx.Templating.CommandLine
 
                 try
                 {
-                    templateProcessor.Start().GetAwaiter().GetResult();
+                    await templateProcessor.RunAsync();
                 }
                 catch (Exception ex)
                 {

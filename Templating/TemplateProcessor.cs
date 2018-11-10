@@ -25,9 +25,9 @@ namespace ConsulRx.Templating
             Properties = properties;
         }
 
-        public Task Start(CancellationToken cancellationToken = default(CancellationToken))
+        public Task RunAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            var completionSource = new TaskCompletionSource<object>();
+            var completionSource = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             var consulDependencies = _renderer.AnalyzeDependencies(TemplatePath, Properties);
             var subscription = _client.ObserveDependencies(consulDependencies).Subscribe(consulState =>
             {
