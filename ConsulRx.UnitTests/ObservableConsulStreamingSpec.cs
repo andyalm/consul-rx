@@ -41,6 +41,7 @@ namespace ConsulRx.UnitTests
                     }
                 }
             });
+            await Task.Delay(10);
             observations.Should().HaveCount(1);
             observations[0].ServiceName.Should().Be("MyService");
             observations[0].Result.Response[0].ServiceAddress.Should().Be("10.8.8.3");
@@ -61,6 +62,7 @@ namespace ConsulRx.UnitTests
             {
                 StatusCode = HttpStatusCode.InternalServerError
             });
+            await Task.Delay(10);
             observations.Should().BeEmpty();
             exception.Should().NotBeNull();
             exception.Should().BeAssignableTo<ConsulErrorException>();
@@ -128,6 +130,7 @@ namespace ConsulRx.UnitTests
                     }, 
                 }
             });
+            await Task.Delay(10);
             observations.Should().HaveCount(1);
             var kvNodes = observations[0].ToKeyValueNodes();
             kvNodes.Should().HaveCount(1);
