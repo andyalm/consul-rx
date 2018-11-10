@@ -11,7 +11,8 @@
     <PackageLicenseUrl>http://opensource.org/licenses/MIT</PackageLicenseUrl>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageReleaseNotes>
-      Fixed an issue causing excess calls to Consul
+      Fixed an issue causing excess calls to Consul.
+      Added SourceLink integration.
     </PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
