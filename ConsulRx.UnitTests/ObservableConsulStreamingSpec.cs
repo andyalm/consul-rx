@@ -41,7 +41,7 @@ namespace ConsulRx.UnitTests
                     }
                 }
             });
-            await Task.Delay(10);
+            await Task.Delay(50);
             observations.Should().HaveCount(1);
             observations[0].ServiceName.Should().Be("MyService");
             observations[0].Result.Response[0].ServiceAddress.Should().Be("10.8.8.3");
