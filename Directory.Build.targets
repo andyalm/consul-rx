@@ -16,6 +16,6 @@
     <PackageReference Include="Microsoft.SourceLink.GitHub" 
                       Version="1.0.0-beta-63127-02"
                       PrivateAssets="All"
-                      Condition="$(NoSourceLink)!='true' />
+                      Condition="$(NoSourceLink)!='true'" />
   </ItemGroup>
 </Project>
