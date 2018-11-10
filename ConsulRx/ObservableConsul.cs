@@ -120,9 +120,9 @@ namespace ConsulRx
 
         public async Task<ConsulState> GetDependenciesAsync(ConsulDependencies dependencies)
         {
-            var serviceTasks = dependencies.Services.Select(GetServiceAsync);
-            var keyTasks = dependencies.Keys.Select(GetKeyAsync);
-            var keyRecursiveTasks = dependencies.KeyPrefixes.Select(GetKeyRecursiveAsync);
+            var serviceTasks = dependencies.Services.Select(GetServiceAsync).ToArray();
+            var keyTasks = dependencies.Keys.Select(GetKeyAsync).ToArray();
+            var keyRecursiveTasks = dependencies.KeyPrefixes.Select(GetKeyRecursiveAsync).ToArray();
 
             await Task.WhenAll(serviceTasks.Cast<Task>().Concat(keyTasks).Concat(keyRecursiveTasks)).ConfigureAwait(false);
 

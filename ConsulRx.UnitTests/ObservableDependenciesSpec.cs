@@ -250,25 +250,25 @@ namespace ConsulRx.UnitTests
             _consulStateException.Should().BeAssignableTo<ConsulErrorException>();
         }
 
-        private Task CompleteServiceAsync(string serviceName, QueryResult<CatalogService[]> result)
+        private async Task CompleteServiceAsync(string serviceName, QueryResult<CatalogService[]> result)
         {
-            return Task.WhenAll(
+            await Task.WhenAll(
                 _consulStateObservations.WaitForAddAsync(),
                 _consulClient.CompleteServiceAsync(serviceName, result)
             );
         }
 
-        private Task CompleteGetAsync(string key, QueryResult<KVPair> result)
+        private async Task CompleteGetAsync(string key, QueryResult<KVPair> result)
         {
-            return Task.WhenAll(
+            await Task.WhenAll(
                 _consulStateObservations.WaitForAddAsync(),
                 _consulClient.CompleteGetAsync(key, result)
             );
         }
 
-        private Task CompleteListAsync(string keyPrefix, QueryResult<KVPair[]> result)
+        private async Task CompleteListAsync(string keyPrefix, QueryResult<KVPair[]> result)
         {
-            return Task.WhenAll(
+            await Task.WhenAll(
                 _consulStateObservations.WaitForAddAsync(),
                 _consulClient.CompleteListAsync(keyPrefix, result)
             );
