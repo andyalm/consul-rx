@@ -9,7 +9,7 @@
           WorkingDirectory="$(MSBuildProjectDirectory)" />
   </Target>
   <PropertyGroup>
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <RepositoryUrl>https://github.com/andyalm/consul-rx.git</RepositoryUrl>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
   <ItemGroup>

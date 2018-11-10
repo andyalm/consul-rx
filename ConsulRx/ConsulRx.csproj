@@ -7,7 +7,7 @@
     <Copyright>2017-2018</Copyright>
     <Authors>Andy Alm</Authors>
     <PackageTags>consul;configuration;reactive;extensions</PackageTags>
-    <PackageProjectUrl>http://github.com/andyalm/consul-rx</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/andyalm/consul-rx</PackageProjectUrl>
     <PackageLicenseUrl>http://opensource.org/licenses/MIT</PackageLicenseUrl>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageReleaseNotes>
