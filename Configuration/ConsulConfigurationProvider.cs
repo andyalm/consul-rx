@@ -104,7 +104,10 @@ namespace ConsulRx.Configuration
             foreach (var mapping in _kvItemConfigMappings)
             {
                 var value = _consulState.KVStore.GetValue(mapping.ConsulKey);
-                data[mapping.ConfigKey] = value;
+                if (value != null)
+                {
+                    data[mapping.ConfigKey] = value;                    
+                }
             }
         }
 

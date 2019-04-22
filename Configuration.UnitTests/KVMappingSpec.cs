@@ -46,6 +46,18 @@ namespace ConsulRx.Configuration.UnitTests
             VerifyConfigKey(configProvider, "consul:afeature", "myvalue");
         }
 
+        [Fact]
+        public void ConfigKeyReturnsNullForMappedConsulKeyThatDoesNotExist()
+        {
+            var source = new ConsulConfigurationSource()
+                .UseCache(new InMemoryEmergencyCache())
+                .MapKey("apps/myapp/myfeature", "consul:afeature");
+
+            var configProvider = _consul.LoadConfigProvider(source, new ConsulState());
+
+            configProvider.TryGet("consul:afeature", out _).Should().BeFalse();
+        }
+
         private void VerifyConfigKey(IConfigurationProvider configProvider, string key, string expectedValue)
         {
             configProvider.TryGet(key, out var actualValue).Should().BeTrue();

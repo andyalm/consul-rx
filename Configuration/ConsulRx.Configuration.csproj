@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard1.4</TargetFramework>
-    <Version>1.0.3-beta01</Version>
+    <Version>1.0.3-beta02</Version>
     <Description>Provides a configuration source that pulls values from Consul's Service Catalog and KV 
     Store.</Description>
     <Copyright>2017-2018</Copyright>
@@ -12,6 +12,8 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageReleaseNotes>
       Added SourceLink integration
+      Fixed an issue when you are mapping to a key in the kvstore that doesn't exist. It will now properly let the 
+      config provider delegate to the next one in the chain.
     </PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
