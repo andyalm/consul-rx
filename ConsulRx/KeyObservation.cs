@@ -16,7 +16,7 @@ namespace ConsulRx
 
         public KeyValueNode ToKeyValueNode()
         {
-            return new KeyValueNode(Key, Result.Response?.Value ?? new byte[0]);
+            return new KeyValueNode(Key, Result.Response?.Value);
         }
     }
 }
