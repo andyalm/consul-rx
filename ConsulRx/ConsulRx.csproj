@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard1.4</TargetFramework>
-    <Version>1.0.2-beta03</Version>
+    <Version>1.0.2</Version>
     <Description>A library for consuming consul values in a continuous stream using the Reactive 
     Extensions</Description>
     <Copyright>2017-2018</Copyright>
@@ -11,8 +11,7 @@
     <PackageLicenseUrl>http://opensource.org/licenses/MIT</PackageLicenseUrl>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageReleaseNotes>
-      Fixed an issue causing excess calls to Consul.
-      Added SourceLink integration.
+      Fixed an issue where a missing key would report as having an empty string value instead of missing/null.
     </PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
