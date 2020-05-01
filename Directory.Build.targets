@@ -1,20 +1,11 @@
 <Project>
-  <Target Name="Push" Condition="$(GeneratePackageOnBuild)=='True'">
-    <PropertyGroup>
-      <PackageOutputPath>$(MSBuildProjectDirectory)\bin\Release\$(PackageId).$(PackageVersion).nupkg</PackageOutputPath>
-      <NuGetPushSource>https://api.nuget.org/v3/index.json</NuGetPushSource>
-    </PropertyGroup>
-    <Error Condition="!Exists('$(PackageOutputPath)')" Text="The NuGet package '$(PackageOutputPath)' does not exist. Has it been built yet?" />
-    <Exec Command="dotnet nuget push --api-key $(NUGET_API_KEY) --source $(NuGetPushSource) $(PackageOutputPath)"
-          WorkingDirectory="$(MSBuildProjectDirectory)" />
-  </Target>
   <PropertyGroup>
     <RepositoryUrl>https://github.com/andyalm/consul-rx.git</RepositoryUrl>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" 
-                      Version="1.0.0-beta-63127-02"
+                      Version="1.0.0"
                       PrivateAssets="All"
                       Condition="$(NoSourceLink)!='true'" />
   </ItemGroup>
