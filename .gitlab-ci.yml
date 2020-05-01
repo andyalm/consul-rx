@@ -1,5 +1,8 @@
+image: mcr.microsoft.com/dotnet/core/sdk:3.1
+
 stages:
 - build
+- publish
 
 variables:
   Configuration: Release
@@ -7,25 +10,45 @@ variables:
   
 master build:
   stage: build
-  image: microsoft/dotnet:2.1-sdk
   script:
   - ./build.sh
-  - dotnet publish -r linux-x64 -o $PWD/artifacts/consul-rx-template/linux-x64 Templating.CommandLine/ConsulRx.Templating.CommandLine.csproj
-  - mkdir artifacts/packages
-  - 'cp */bin/Release/*.nupkg ./artifacts/packages'
+  - dotnet publish -r linux-x64 Templating.CommandLine/ConsulRx.Templating.CommandLine.csproj
   artifacts:
-    name: 'consul-rx-$CI_PIPELINE_ID'
+    name: ConsulRx-$CI_PIPELINE_ID
     when: on_success
     paths: 
-    - artifacts
+    - ConsulRx/bin/$Configuration/*.nupkg
+    - Configuration/bin/$Configuration/*.nupkg
+    - Templating.CommandLine/bin/$Configuration/netcoreapp3.1/linux-x64/publish/**
   only:
   - master
   
 ci build:
   stage: build
-  image: microsoft/dotnet:2.1-sdk
   script:
   - ./build.sh
   except:
   - tags
   - master
+
+publish ConsulRx to nuget.org:
+  stage: publish
+  only:
+  - master
+  script:
+  - dotnet nuget push $(ls ConsulRx/bin/$Configuration/*.nupkg) -k $NUGET_API_KEY -s https://api.nuget.org/v3/index.json  
+  environment:
+    name: nuget.org
+    url: https://nuget.org/packages/ConsulRx/
+  when: manual
+
+publish Configuration to nuget.org:
+  stage: publish
+  only:
+  - master
+  script:
+  - dotnet nuget push $(ls Configuration/bin/$Configuration/*.nupkg) -k $NUGET_API_KEY -s https://api.nuget.org/v3/index.json  
+  environment:
+    name: nuget.org
+    url: https://nuget.org/packages/ConsulRx.Configuration/
+  when: manual  
