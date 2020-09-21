@@ -4,15 +4,15 @@
     <Version>1.1.0-beta01</Version>
     <Description>Provides a configuration source that pulls values from Consul's Service Catalog and KV 
     Store.</Description>
-    <Copyright>2017-2018</Copyright>
+    <Copyright>2017-2020</Copyright>
     <Authors>Andy Alm</Authors>
     <PackageTags>consul;configuration;reactive;extensions</PackageTags>
     <PackageProjectUrl>https://github.com/andyalm/consul-rx</PackageProjectUrl>
     <PackageLicenseUrl>http://opensource.org/licenses/MIT</PackageLicenseUrl>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageReleaseNotes>
-      Fixed an issue when you are mapping to a key in the kvstore that doesn't exist. It will now properly let the 
-      config provider delegate to the next one in the chain.
+      - Removed file system caching by default as it does not play well in a serverless environment and is not really useful in a containerized one either. It can still be opted into.
+      - Started targeting netstandard2.0.
     </PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
