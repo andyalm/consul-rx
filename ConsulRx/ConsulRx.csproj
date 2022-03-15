@@ -13,6 +13,7 @@
     <PackageReleaseNotes>
       Fixed an issue where a missing key would report as having an empty string value instead of missing/null.
     </PackageReleaseNotes>
+    <LangVersion>Latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Consul" Version="0.7.2.*" />

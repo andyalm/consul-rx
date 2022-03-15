@@ -86,8 +86,13 @@ namespace ConsulRx.Configuration
 
         public ConsulConfigurationSource MapKey(string consulKey, string configKey)
         {
+            return MapKey<PassthruConfigTypeConverter>(consulKey, configKey);
+        }
+
+        public ConsulConfigurationSource MapKey<TTypeConverter>(string consulKey, string configKey) where TTypeConverter : IConfigTypeConverter, new()
+        {
             _consulDependencies.Keys.Add(consulKey);
-            _kvItemConfigMappings.Add(new KVItemConfigMapping(configKey, consulKey));
+            _kvItemConfigMappings.Add(new KVItemConfigMapping(configKey, consulKey, new TTypeConverter()));
 
             return this;
         }

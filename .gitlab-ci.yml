@@ -1,4 +1,4 @@
-image: mcr.microsoft.com/dotnet/core/sdk:3.1
+image: mcr.microsoft.com/dotnet/core/sdk:6.0
 
 stages:
 - build
@@ -19,7 +19,7 @@ build:
     paths: 
     - ConsulRx/bin/$Configuration/*.nupkg
     - Configuration/bin/$Configuration/*.nupkg
-    - Templating.CommandLine/bin/$Configuration/netcoreapp3.1/linux-x64/publish/**
+    - Templating.CommandLine/bin/$Configuration/net6.0/linux-x64/publish/**
 
 publish ConsulRx to nuget.org:
   stage: publish

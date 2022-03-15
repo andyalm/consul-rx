@@ -1,22 +1,21 @@
-﻿using System;
-using System.IO;
-using System.Threading;
-using Microsoft.AspNetCore.Hosting;
+﻿using ConsulRx.Configuration;
+using Microsoft.AspNetCore.Builder;
 
-namespace ConsulRx.Configuration.TestHarness
+var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddConsul(consul =>
 {
-    class Program
-    {
-        static void Main(string[] args)
-        {
-            var host = new WebHostBuilder()
-                .UseKestrel()
-                .UseIISIntegration() //is there value in this or should we just leave it out?
-                .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseStartup<Startup>()
-                .Build();
+    consul
+        .AutoUpdate()
+        .MapHttpService("service1-http", "serviceEndpoints:service1")
+        .MapHttpService("service2-http", "serviceEndpoints:service2")
+        .MapKeyPrefix("apps/harness", "consul")
+        .MapKey("shared/feature1", "features:feature1");
+});
+var app = builder.Build();
+app.UseEndpoints(e =>
+{
+    e.MapControllers();
+});
 
-            host.Run();
-        }
-    }
-}
+app.Run();
+
