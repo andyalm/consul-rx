@@ -1,24 +1,26 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard1.4</TargetFramework>
-    <Version>1.0.3</Version>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Version>1.1.0</Version>
     <Description>Provides a configuration source that pulls values from Consul's Service Catalog and KV 
     Store.</Description>
-    <Copyright>2017-2018</Copyright>
+    <Copyright>2017-2020</Copyright>
     <Authors>Andy Alm</Authors>
     <PackageTags>consul;configuration;reactive;extensions</PackageTags>
     <PackageProjectUrl>https://github.com/andyalm/consul-rx</PackageProjectUrl>
     <PackageLicenseUrl>http://opensource.org/licenses/MIT</PackageLicenseUrl>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageReleaseNotes>
-      Fixed an issue when you are mapping to a key in the kvstore that doesn't exist. It will now properly let the 
-      config provider delegate to the next one in the chain.
+      - Removed file system caching by default as it does not play well in a serverless environment and is not really useful in a containerized one either. It can still be opted into.
+      - Started targeting netstandard2.0.
+      - Added a IConfigTypeConverter, which can be used to customize how a consul key is mapped to the config store.
     </PackageReleaseNotes>
+    <LangVersion>Latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\ConsulRx\ConsulRx.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="1.1.*" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.0.*" />
   </ItemGroup>
 </Project>

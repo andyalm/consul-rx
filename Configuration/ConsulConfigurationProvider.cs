@@ -106,7 +106,11 @@ namespace ConsulRx.Configuration
                 var value = _consulState.KVStore.GetValue(mapping.ConsulKey);
                 if (value != null)
                 {
-                    data[mapping.ConfigKey] = value;                    
+                    foreach (var configPair in mapping.TypeConverter.GetConfigValues(value))
+                    {
+                        var configKey = CombineKeys(mapping.ConfigKey, configPair.Key);
+                        data[configKey] = configPair.Value;
+                    }                   
                 }
             }
         }
@@ -133,6 +137,21 @@ namespace ConsulRx.Configuration
                     data[fullConfigKey] = kv.Value;
                 }
             }
+        }
+        
+        private string CombineKeys(string parentConfigKey, string childConfigKey)
+        {
+            if (string.IsNullOrEmpty(childConfigKey))
+            {
+                return parentConfigKey;
+            }
+
+            if (!childConfigKey.StartsWith(":"))
+            {
+                childConfigKey = $":{childConfigKey}";
+            }
+
+            return $"{parentConfigKey}{childConfigKey}";
         }
     }
 }

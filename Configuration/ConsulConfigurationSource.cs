@@ -13,7 +13,7 @@ namespace ConsulRx.Configuration
         private readonly ServiceConfigMappingCollection _serviceConfigMappings = new ServiceConfigMappingCollection();
         private readonly KVTreeConfigMappingCollection _kvTreeConfigMappings = new KVTreeConfigMappingCollection();
         private readonly KVItemConfigMappingCollection _kvItemConfigMappings = new KVItemConfigMappingCollection();
-        private IEmergencyCache _cache = new FileSystemEmergencyCache();
+        private IEmergencyCache _cache = NullEmergencyCache.Instance;
         private bool _autoUpdate = false;
 
         public ConsulConfigurationSource()
@@ -86,8 +86,13 @@ namespace ConsulRx.Configuration
 
         public ConsulConfigurationSource MapKey(string consulKey, string configKey)
         {
+            return MapKey<PassthruConfigTypeConverter>(consulKey, configKey);
+        }
+
+        public ConsulConfigurationSource MapKey<TTypeConverter>(string consulKey, string configKey) where TTypeConverter : IConfigTypeConverter, new()
+        {
             _consulDependencies.Keys.Add(consulKey);
-            _kvItemConfigMappings.Add(new KVItemConfigMapping(configKey, consulKey));
+            _kvItemConfigMappings.Add(new KVItemConfigMapping(configKey, consulKey, new TTypeConverter()));
 
             return this;
         }
@@ -125,7 +130,12 @@ namespace ConsulRx.Configuration
             return new ConsulConfigurationProvider(consulClient, _cache, _consulDependencies, _serviceConfigMappings, _kvTreeConfigMappings, _kvItemConfigMappings, _autoUpdate);
         }
 
-        internal ConsulConfigurationSource UseCache(IEmergencyCache cache)
+        public ConsulConfigurationSource UseFilesystemCache()
+        {
+            return UseCache(new FileSystemEmergencyCache());
+        }
+
+        public ConsulConfigurationSource UseCache(IEmergencyCache cache)
         {
             _cache = cache;
 

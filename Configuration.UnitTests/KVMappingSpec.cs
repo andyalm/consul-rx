@@ -58,9 +58,26 @@ namespace ConsulRx.Configuration.UnitTests
             configProvider.TryGet("consul:afeature", out _).Should().BeFalse();
         }
 
+        [Fact]
+        public void CommaDelimitedValueCanBeConvertedToConfigList()
+        {
+            var source = new ConsulConfigurationSource()
+                .UseCache(new InMemoryEmergencyCache())
+                .MapKey<CommaDelimitedListConverter>("apps/myapp/myfeatures", "consul:myfeatures");
+            
+            var consulState = new ConsulState();
+            consulState = consulState.UpdateKVNode(new KeyValueNode("apps/myapp/myfeatures", "myvalue1, myvalue2, myvalue3"));
+
+            var configProvider = _consul.LoadConfigProvider(source, consulState);
+            
+            VerifyConfigKey(configProvider, "consul:myfeatures:0", "myvalue1");
+            VerifyConfigKey(configProvider, "consul:myfeatures:1", "myvalue2");
+            VerifyConfigKey(configProvider, "consul:myfeatures:2", "myvalue3");
+        }
+
         private void VerifyConfigKey(IConfigurationProvider configProvider, string key, string expectedValue)
         {
-            configProvider.TryGet(key, out var actualValue).Should().BeTrue();
+            configProvider.TryGet(key, out var actualValue).Should().BeTrue($"expected key {key} to exist in the config store");
             actualValue.Should().Be(expectedValue);
         }
     }
