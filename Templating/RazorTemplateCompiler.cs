@@ -21,11 +21,12 @@ namespace ConsulRx.Templating
     {
         public Assembly Compile(IEnumerable<TemplateMetadata> templates, Type baseClass)
         {
+            using var eventContext = new EventContext("ConsulRx", "CompileRazorTemplate");
             var metadataReferences = typeof(ConsulTemplateBase).GetTypeInfo()
                 .Assembly
                 .GetReferencedAssemblies()
                 .Select(Assembly.Load)
-                .Concat(new[] {typeof(ConsulTemplateBase).GetTypeInfo().Assembly})
+                .Concat(new[] {typeof(ConsulTemplateBase).GetTypeInfo().Assembly, baseClass.Assembly})
                 .Select(assembly => assembly.Location)
                 .Select(location => MetadataReference.CreateFromFile(location))
                 .Concat(new[]
@@ -35,17 +36,18 @@ namespace ConsulRx.Templating
                     MetadataReference.CreateFromFile(typeof(object).GetTypeInfo().Assembly.Location)
                 })
                 .ToArray();
-
+            
             var language = new CSharpRazorCodeLanguage();
             var host = new RazorEngineHost(language)
             {
                 DefaultBaseClass = baseClass.FullName,
-                DefaultNamespace = "ConsulRazor.CompiledRazorTemplates",
+                DefaultNamespace = "ConsulRx.Templating.CompiledRazorTemplates",
             };
 
             // Everyone needs the System namespace, right?
             host.NamespaceImports.Add("System");
             host.NamespaceImports.Add("System.Linq");
+            host.NamespaceImports.Add(baseClass.Namespace!);
             var engine = new RazorTemplateEngine(host);
             var syntaxTrees = templates.Select(metadata =>
                 {
@@ -59,16 +61,15 @@ namespace ConsulRx.Templating
                 })
                 .ToArray();
 
-            var compilation = CSharpCompilation.Create("ConsulRazor.CompiledRazorTemplates", syntaxTrees,
+            var compilation = CSharpCompilation.Create("ConsulRx.Templating.CompiledRazorTemplates", syntaxTrees,
                 metadataReferences, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
-            return CompileCompilation(compilation);
+            return CompileCompilation(compilation, eventContext);
         }
 
-        private Assembly CompileCompilation(CSharpCompilation compilation)
+        private Assembly CompileCompilation(CSharpCompilation compilation, EventContext eventContext)
         {
             using (var ms = new MemoryStream())
-            using (var eventContext = new EventContext("ConsulRx", "CompileRazorTemplates"))
             {
                 EmitResult result = compilation.Emit(ms);
 

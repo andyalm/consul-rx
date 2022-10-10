@@ -27,7 +27,7 @@ namespace ConsulRx.Templating
 
         public string Filename => Path.GetFileName(_fullPath);
 
-        public string Namespace => "ConsulTemplate.CompiledRazorTemplates";
+        public string Namespace => "ConsulRx.Templating.CompiledRazorTemplates";
 
         public string FullTypeName => $"{Namespace}.{ClassName}";
     }

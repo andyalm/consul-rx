@@ -66,6 +66,11 @@ namespace ConsulRx.TestSupport
 
         public Task<QueryResult<KVPair>> Get(string key, QueryOptions q, CancellationToken ct = new CancellationToken())
         {
+            if (_waitingGetCalls.TryGetValue(key, out var waitingEvent))
+            {
+                waitingEvent.Set();
+                _waitingGetCalls.Remove(key);
+            }
             var completionSource = new TaskCompletionSource<QueryResult<KVPair>>();
             _getCalls[key] = completionSource;
 
@@ -101,6 +106,11 @@ namespace ConsulRx.TestSupport
 
         public Task<QueryResult<KVPair[]>> List(string prefix, QueryOptions q, CancellationToken ct = new CancellationToken())
         {
+            if (_waitingListCalls.TryGetValue(prefix, out var waitingEvent))
+            {
+                waitingEvent.Set();
+                _waitingListCalls.Remove(prefix);
+            }
             var completionSource = new TaskCompletionSource<QueryResult<KVPair[]>>();
             _listCalls[prefix] = completionSource;
 
@@ -118,7 +128,7 @@ namespace ConsulRx.TestSupport
             else
             {
                 var serviceCallResetEvent = new AsyncAutoResetEvent(false);
-                _waitingGetCalls[prefix] = serviceCallResetEvent;
+                _waitingListCalls[prefix] = serviceCallResetEvent;
                 if (!(await serviceCallResetEvent.WaitAsync(500)))
                 {
                     throw new InvalidOperationException($"Timed out waiting for a request for key prefix '{prefix}' to be initiated");
