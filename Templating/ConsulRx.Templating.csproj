@@ -1,11 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard1.5</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>ConsulRx.Templating</PackageId>
-    <Version>0.1.0-alpha</Version>
+    <PackageVersion Condition="$(PackageReleaseTag) != ''">$(PackageReleaseTag.Substring(1))</PackageVersion>
+    <PackageVersion Condition="$(PackageVersion)==''">0.0.1-dev</PackageVersion>
     <Authors>Andy Alm</Authors>
     <Description>.NET API for executing templates that plug into Consul values and automatically update when consul values change.</Description>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/andyalm/consul-rx</RepositoryUrl>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\ConsulRx\ConsulRx.csproj" />
@@ -15,5 +19,9 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.0.0" />
     <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
     <PackageReference Include="Spiffy.Monitoring" Version="4.0.*" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\LICENSE" Pack="true" PackagePath="\" />
   </ItemGroup>
 </Project>

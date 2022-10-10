@@ -1,0 +1,48 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Publish
+
+# Controls when the action will run. 
+on:
+  # Triggers the workflow when a stable or pre-release release is published
+  release:
+    types: [ published ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  publish:
+    if: github.repository == 'andyalm/consul-rx'
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    env:
+      Configuration: Release
+      PackageReleaseNotes: ${{ github.event.release.body }}
+      PackageReleaseTag: ${{ github.event.release.tag_name }}
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 6.0.x
+
+      - name: Build
+        run: dotnet build
+        
+      - name: Publish ConsulRx to nuget.org
+        run: dotnet nuget push $(ls ConsulRx/bin/${{ env.Configuration }}/*.nupkg) -k ${{ secrets.NUGET_FEED_KEY }} -s https://api.nuget.org/v3/index.json
+
+      - name: Publish ConsulRx.Configuration to nuget.org
+        run: dotnet nuget push $(ls Configuration/bin/${{ env.Configuration }}/*.nupkg) -k ${{ secrets.NUGET_FEED_KEY }} -s https://api.nuget.org/v3/index.json
+
+      - name: Publish ConsulRx.Templating to nuget.org
+        run: dotnet nuget push $(ls Templating/bin/${{ env.Configuration }}/*.nupkg) -k ${{ secrets.NUGET_FEED_KEY }} -s https://api.nuget.org/v3/index.json
+        
+    environment:
+      name: nuget.org
+      url: https://nuget.org/packages/ConsulRx
