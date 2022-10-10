@@ -14,6 +14,7 @@ namespace ConsulRx.Templating
         private readonly IDictionary<string, TemplateMetadata> _templateMetadata;
         private Type _baseClass = typeof(ConsulTemplateBase);
         private Action<ConsulTemplateBase> _configureTemplate = _ => {};
+        private readonly List<AssemblyName> _assemblyReferences = new();
 
         public RazorTemplateRenderer(IEnumerable<string> templatePaths, IRazorTemplateCompiler compiler)
         {
@@ -38,6 +39,11 @@ namespace ConsulRx.Templating
         {
             _baseClass = typeof(T);
             _configureTemplate = t => configure((T) t);
+        }
+
+        public void AddAssemblyReference(string assemblyName)
+        {
+            _assemblyReferences.Add(new AssemblyName(assemblyName));
         }
 
         public ConsulDependencies AnalyzeDependencies(string templatePath, PropertyBag properties = null)
@@ -97,7 +103,7 @@ namespace ConsulRx.Templating
 
         private Assembly Compile()
         {
-            return _compiler.Compile(_templateMetadata.Values, _baseClass);
+            return _compiler.Compile(_templateMetadata.Values, _baseClass, _assemblyReferences);
         }
 
         private TemplateMetadata GetTemplateMetadata(string templatePath)

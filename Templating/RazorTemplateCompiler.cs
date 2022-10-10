@@ -14,17 +14,18 @@ namespace ConsulRx.Templating
 {
     public interface IRazorTemplateCompiler
     {
-        Assembly Compile(IEnumerable<TemplateMetadata> templatePaths, Type baseClass);
+        Assembly Compile(IEnumerable<TemplateMetadata> templatePaths, Type baseClass, IEnumerable<AssemblyName> assemblyReferences);
     }
 
     public class RazorTemplateCompiler : IRazorTemplateCompiler
     {
-        public Assembly Compile(IEnumerable<TemplateMetadata> templates, Type baseClass)
+        public Assembly Compile(IEnumerable<TemplateMetadata> templates, Type baseClass, IEnumerable<AssemblyName> assemblyReferences)
         {
             using var eventContext = new EventContext("ConsulRx", "CompileRazorTemplate");
             var metadataReferences = typeof(ConsulTemplateBase).GetTypeInfo()
                 .Assembly
                 .GetReferencedAssemblies()
+                .Concat(assemblyReferences)
                 .Select(Assembly.Load)
                 .Concat(new[] {typeof(ConsulTemplateBase).GetTypeInfo().Assembly, baseClass.Assembly})
                 .Select(assembly => assembly.Location)

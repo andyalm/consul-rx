@@ -37,6 +37,12 @@ namespace ConsulRx.Templating
             return this;
         }
 
+        public TemplateProcessorBuilder AddAssemblyReference(string assemblyName)
+        {
+            _renderer.AddAssemblyReference(assemblyName);
+            return this;
+        }
+
         public TemplateProcessorBuilder TemplateProperties(IDictionary<string, object> properties)
         {
             _properties = properties;
