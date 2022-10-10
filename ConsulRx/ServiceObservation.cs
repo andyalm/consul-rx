@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using Consul;
 
 namespace ConsulRx
@@ -33,7 +34,7 @@ namespace ConsulRx
                         Name = n.Node,
                         Port = n.ServicePort,
                         Tags = n.ServiceTags,
-                        Metadata = n.ServiceMeta
+                        Metadata = n.ServiceMeta ?? new Dictionary<string, string>()
                     })
                     .ToArray()
             };
