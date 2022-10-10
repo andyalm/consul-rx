@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard1.4</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <PackageVersion Condition="$(PackageReleaseTag) != ''">$(PackageReleaseTag.Substring(1))</PackageVersion>
     <PackageVersion Condition="$(PackageVersion)==''">1.0.2-dev</PackageVersion>
     <Description>A library for consuming consul values in a continuous stream using the Reactive 
