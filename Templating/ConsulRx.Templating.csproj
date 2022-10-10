@@ -9,6 +9,8 @@
     <Description>.NET API for executing templates that plug into Consul values and automatically update when consul values change.</Description>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/andyalm/consul-rx</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>

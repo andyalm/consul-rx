@@ -10,6 +10,8 @@
     <PackageTags>consul;configuration;reactive;extensions</PackageTags>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/andyalm/consul-rx</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <LangVersion>Latest</LangVersion>
   </PropertyGroup>
