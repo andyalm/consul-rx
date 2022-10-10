@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using FluentAssertions;
 using Xunit;
 
@@ -26,6 +27,11 @@ namespace ConsulRx.UnitTests
                         {
                             "tag1",
                             "tag2"
+                        },
+                        Metadata = new Dictionary<string, string>
+                        {
+                            ["mymeta1"] = "myval1",
+                            ["mymeta2"] = "myval2",
                         }
                     },
                 }
@@ -46,10 +52,15 @@ namespace ConsulRx.UnitTests
                         {
                             "tag1",
                             "tag2"
+                        },
+                        Metadata = new Dictionary<string, string>
+                        {
+                            ["mymeta1"] = "myval1",
+                            ["mymeta2"] = "myval2",
                         }
                     },
                 }
-            }, out var dontCare).Should().BeFalse();
+            }, out _).Should().BeFalse();
         }
 
         [Fact]
@@ -96,6 +107,51 @@ namespace ConsulRx.UnitTests
             }, out var updatedState).Should().BeTrue();
             updatedState.Services.First().Nodes.First().Tags.Should().HaveCount(2);
             updatedState.Services.First().Nodes.First().Tags.Should().ContainInOrder("tag2", "tag3");
+        }
+        
+        [Fact]
+        public void TryUpdateServiceWithDifferentMetadataOnANodeReturnsTrue()
+        {
+            var consulState = _consulState.UpdateService(new Service
+            {
+                Id = "myid",
+                Name = "myservice",
+                Nodes = new[]
+                {
+                    new ServiceNode
+                    {
+                        Name = "mynode1",
+                        Address = "10.0.0.1",
+                        Port = 80,
+                        Metadata = new Dictionary<string, string>
+                        {
+                            ["mymeta1"] = "myval1"
+                        }
+                    },
+                }
+            });
+
+            consulState.TryUpdateService(new Service
+            {
+                Id = "myid",
+                Name = "myservice",
+                Nodes = new[]
+                {
+                    new ServiceNode
+                    {
+                        Name = "mynode1",
+                        Address = "10.0.0.1",
+                        Port = 80,
+                        Metadata = new Dictionary<string, string>
+                        {
+                            ["mymeta1"] = "myval2"
+                        }
+                    },
+                }
+            }, out var updatedState).Should().BeTrue();
+            updatedState.Services.First().Nodes.First().Metadata.Should().HaveCount(1);
+            updatedState.Services.First().Nodes.First().Metadata.Should().ContainKey("mymeta1");
+            updatedState.Services.First().Nodes.First().Metadata.Should().ContainValue("myval2");
         }
 
         [Fact]

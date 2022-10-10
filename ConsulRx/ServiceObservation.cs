@@ -32,7 +32,8 @@ namespace ConsulRx
                         Address = string.IsNullOrWhiteSpace(n.ServiceAddress) ? n.Address : n.ServiceAddress,
                         Name = n.Node,
                         Port = n.ServicePort,
-                        Tags = n.ServiceTags
+                        Tags = n.ServiceTags,
+                        Metadata = n.ServiceMeta
                     })
                     .ToArray()
             };
