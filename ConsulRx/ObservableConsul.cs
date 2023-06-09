@@ -188,7 +188,7 @@ namespace ConsulRx
                                 }
                                 else
                                 {
-                                    eventContext["UpdateType"] = "Noop";
+                                    eventContext.Suppress();
                                 }
                             });
                         }, o.OnError),
@@ -209,7 +209,7 @@ namespace ConsulRx
                                 }
                                 else
                                 {
-                                    eventContext["UpdateType"] = "Noop";
+                                    eventContext.Suppress();
                                 }
                             });
                         }, o.OnError),
@@ -231,7 +231,7 @@ namespace ConsulRx
                                     }
                                     else
                                     {
-                                        eventContext["UpdateType"] = "Noop";
+                                        eventContext.Suppress();
                                     }
                                 }
                                 else
@@ -246,7 +246,7 @@ namespace ConsulRx
                                     }
                                     else
                                     {
-                                        eventContext["UpdateType"] = "Noop";
+                                        eventContext.Suppress();
                                     }
                                 }
                             });
@@ -283,7 +283,11 @@ namespace ConsulRx
                 {
                     var result = await call().ConfigureAwait(false);
                     eventContext.IncludeConsulResult(result);
-                    if (!HealthyCodes.Contains(result.StatusCode))
+                    if (HealthyCodes.Contains(result.StatusCode))
+                    {
+                        eventContext.Suppress();
+                    }
+                    else
                     {
                         //if we got an error that indicates either server or client aren't healthy (e.g. 500 or 403)
                         //then model this as an exception (same as if server can't be contacted). We will figure out what to do below
