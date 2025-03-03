@@ -5,10 +5,9 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Consul;
 using ConsulRx.TestSupport;
-using FluentAssertions;
-using FluentAssertions.Common;
+using AwesomeAssertions;
+using AwesomeAssertions.Common;
 using Xunit;
 
 namespace ConsulRx.UnitTests
@@ -108,6 +107,7 @@ namespace ConsulRx.UnitTests
                     }
                 }
             });
+            await Task.Delay(50);
             errorObservations.Should().BeEmpty();
             observations.Should().HaveCount(2);
         }

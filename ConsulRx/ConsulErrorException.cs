@@ -1,6 +1,4 @@
 using System;
-using System.Net;
-using Consul;
 
 namespace ConsulRx
 {

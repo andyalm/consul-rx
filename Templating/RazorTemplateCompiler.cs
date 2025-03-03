@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
-using Microsoft.AspNetCore.Razor;
+using Microsoft.AspNetCore.Razor.Language;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
@@ -21,6 +21,7 @@ namespace ConsulRx.Templating
     {
         public Assembly Compile(IEnumerable<TemplateMetadata> templates, Type baseClass)
         {
+            var runtimeDir = Path.GetDirectoryName(typeof(object).GetTypeInfo().Assembly.Location);
             var metadataReferences = typeof(ConsulTemplateBase).GetTypeInfo()
                 .Assembly
                 .GetReferencedAssemblies()
@@ -28,38 +29,48 @@ namespace ConsulRx.Templating
                 .Concat(new[] {typeof(ConsulTemplateBase).GetTypeInfo().Assembly})
                 .Select(assembly => assembly.Location)
                 .Select(location => MetadataReference.CreateFromFile(location))
-                .Concat(new[]
-                {
-                    MetadataReference.CreateFromFile(Path.Combine(
-                        Path.GetDirectoryName(typeof(Enumerable).GetTypeInfo().Assembly.Location), "mscorlib.dll")),
-                    MetadataReference.CreateFromFile(typeof(object).GetTypeInfo().Assembly.Location)
-                })
+                .Concat(new[] { "mscorlib.dll", "System.Runtime.dll", "netstandard.dll" }
+                    .Select(dll => Path.Combine(runtimeDir, dll))
+                    .Where(File.Exists)
+                    .Select(path => MetadataReference.CreateFromFile(path)))
+                .Concat(new[] { MetadataReference.CreateFromFile(typeof(object).GetTypeInfo().Assembly.Location) })
                 .ToArray();
 
-            var language = new CSharpRazorCodeLanguage();
-            var host = new RazorEngineHost(language)
-            {
-                DefaultBaseClass = baseClass.FullName,
-                DefaultNamespace = "ConsulRazor.CompiledRazorTemplates",
-            };
+            var fileSystem = RazorProjectFileSystem.Create("/");
+            var projectEngine = RazorProjectEngine.Create(
+                RazorConfiguration.Default,
+                fileSystem,
+                builder =>
+                {
+                    builder.SetNamespace("ConsulTemplate.CompiledRazorTemplates");
+                    builder.SetBaseType(baseClass.FullName);
+                    builder.ConfigureClass((document, classNode) =>
+                    {
+                        var fileName = Path.GetFileNameWithoutExtension(document.Source.FilePath);
+                        var hash = document.Source.FilePath.GetHashCode().ToString();
+                        classNode.ClassName = System.Text.RegularExpressions.Regex.Replace(
+                            fileName, "[^a-z0-9]", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase)
+                            + "_" + hash.Replace('-', '_');
+                    });
+                    builder.AddDefaultImports(
+                        "@using System",
+                        "@using System.Linq"
+                    );
+                });
 
-            // Everyone needs the System namespace, right?
-            host.NamespaceImports.Add("System");
-            host.NamespaceImports.Add("System.Linq");
-            var engine = new RazorTemplateEngine(host);
             var syntaxTrees = templates.Select(metadata =>
                 {
-                    using (var templateStream = File.OpenRead(metadata.FullPath))
-                    {
-                        var generatorResults = engine.GenerateCode(new StreamReader(templateStream), metadata.ClassName,
-                            metadata.Namespace, metadata.Filename);
-
-                        return CSharpSyntaxTree.ParseText(generatorResults.GeneratedCode);
-                    }
+                    var sourceDocument = RazorSourceDocument.Create(
+                        File.ReadAllText(metadata.FullPath), metadata.FullPath);
+                    var codeDocument = RazorCodeDocument.Create(sourceDocument);
+                    projectEngine.Engine.Process(codeDocument);
+                    var generatedCode = codeDocument.GetCSharpDocument().GeneratedCode;
+                    return CSharpSyntaxTree.ParseText(generatedCode);
                 })
                 .ToArray();
 
-            var compilation = CSharpCompilation.Create("ConsulRazor.CompiledRazorTemplates", syntaxTrees,
+            var assemblyName = $"ConsulRazor.CompiledRazorTemplates.{Guid.NewGuid():N}";
+            var compilation = CSharpCompilation.Create(assemblyName, syntaxTrees,
                 metadataReferences, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
             return CompileCompilation(compilation);

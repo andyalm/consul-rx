@@ -1,5 +1,4 @@
 using System;
-using Consul;
 
 namespace ConsulRx
 {

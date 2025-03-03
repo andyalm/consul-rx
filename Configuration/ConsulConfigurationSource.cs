@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading;
-using Consul;
 using Microsoft.Extensions.Configuration;
 
 namespace ConsulRx.Configuration

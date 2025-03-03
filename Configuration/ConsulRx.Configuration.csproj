@@ -1,19 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>1.1.0</Version>
+    <Version>2.0.0-alpha01</Version>
     <Description>Provides a configuration source that pulls values from Consul's Service Catalog and KV 
     Store.</Description>
-    <Copyright>2017-2020</Copyright>
+    <Copyright>2017-2026</Copyright>
     <Authors>Andy Alm</Authors>
     <PackageTags>consul;configuration;reactive;extensions</PackageTags>
     <PackageProjectUrl>https://github.com/andyalm/consul-rx</PackageProjectUrl>
-    <PackageLicenseUrl>http://opensource.org/licenses/MIT</PackageLicenseUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageReleaseNotes>
-      - Removed file system caching by default as it does not play well in a serverless environment and is not really useful in a containerized one either. It can still be opted into.
-      - Started targeting netstandard2.0.
-      - Added a IConfigTypeConverter, which can be used to customize how a consul key is mapped to the config store.
+      - Replaced Newtonsoft.Json with System.Text.Json in FileSystemEmergencyCache.
+      - Retargeted from netstandard1.4 to netstandard2.0.
     </PackageReleaseNotes>
     <LangVersion>Latest</LangVersion>
   </PropertyGroup>

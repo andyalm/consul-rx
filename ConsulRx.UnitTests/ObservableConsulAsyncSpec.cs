@@ -1,8 +1,7 @@
-﻿using System.Net;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using Consul;
-using FluentAssertions;
+using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 
@@ -11,14 +10,14 @@ namespace ConsulRx.UnitTests
     public class ObservableConsulAsyncSpec
     {
         private readonly ObservableConsul _observableConsul;
-        private readonly IConsulClient _consulClient;
+        private readonly IConsulHttpClient _consulClient;
 
         public ObservableConsulAsyncSpec()
         {
-            _consulClient = Substitute.For<IConsulClient>();
+            _consulClient = Substitute.For<IConsulHttpClient>();
             _observableConsul = new ObservableConsul(_consulClient);
-            
-            _consulClient.Catalog.Service("MyService", Arg.Any<string>(), Arg.Any<QueryOptions>())
+
+            _consulClient.GetServiceAsync("MyService", Arg.Any<QueryOptions>())
                 .Returns(new QueryResult<CatalogService[]>
                 {
                     StatusCode = HttpStatusCode.OK,
@@ -29,17 +28,17 @@ namespace ConsulRx.UnitTests
                             ServiceName = "MyService",
                             Node = "Node1",
                             ServiceAddress = "10.0.0.2"
-                        }, 
+                        },
                         new CatalogService
                         {
                             ServiceName = "MyService",
                             Node = "Node2",
                             ServiceAddress = "10.0.0.3"
-                        } 
+                        }
                     }
                 });
-            
-            _consulClient.Catalog.Service("MyService2", Arg.Any<string>(), Arg.Any<QueryOptions>())
+
+            _consulClient.GetServiceAsync("MyService2", Arg.Any<QueryOptions>())
                 .Returns(new QueryResult<CatalogService[]>
                 {
                     StatusCode = HttpStatusCode.OK,
@@ -53,14 +52,14 @@ namespace ConsulRx.UnitTests
                         }
                     }
                 });
-            
-            _consulClient.Catalog.Service("MissingService", Arg.Any<string>(), Arg.Any<QueryOptions>())
+
+            _consulClient.GetServiceAsync("MissingService", Arg.Any<QueryOptions>())
                 .Returns(new QueryResult<CatalogService[]>
                 {
                     StatusCode = HttpStatusCode.NotFound
                 });
-            
-            _consulClient.KV.Get("shared/key1", Arg.Any<QueryOptions>()).Returns(new QueryResult<KVPair>
+
+            _consulClient.GetKeyAsync("shared/key1", Arg.Any<QueryOptions>()).Returns(new QueryResult<KVPair>
             {
                 StatusCode = HttpStatusCode.OK,
                 Response = new KVPair("shared/key1")
@@ -68,14 +67,14 @@ namespace ConsulRx.UnitTests
                     Value = Encoding.UTF8.GetBytes("value1")
                 }
             });
-            
-            _consulClient.KV.Get("shared/missingkey", Arg.Any<QueryOptions>())
+
+            _consulClient.GetKeyAsync("shared/missingkey", Arg.Any<QueryOptions>())
                 .Returns(new QueryResult<KVPair>
                 {
                     StatusCode = HttpStatusCode.NotFound
                 });
-            
-            _consulClient.KV.List("apps/myapp", Arg.Any<QueryOptions>())
+
+            _consulClient.GetKeyListAsync("apps/myapp", Arg.Any<QueryOptions>())
                 .Returns(new QueryResult<KVPair[]>
                 {
                     StatusCode = HttpStatusCode.OK,
@@ -95,8 +94,8 @@ namespace ConsulRx.UnitTests
                         }
                     }
                 });
-            
-            _consulClient.KV.List("apps/missingapp", Arg.Any<QueryOptions>())
+
+            _consulClient.GetKeyListAsync("apps/missingapp", Arg.Any<QueryOptions>())
                 .Returns(new QueryResult<KVPair[]>
                 {
                     StatusCode = HttpStatusCode.NotFound
@@ -123,7 +122,7 @@ namespace ConsulRx.UnitTests
         [Fact]
         public async Task GetServiceThrowsWhenConsulReturnsServerError()
         {
-            _consulClient.Catalog.Service("MyService", Arg.Any<string>(), Arg.Any<QueryOptions>())
+            _consulClient.GetServiceAsync("MyService", Arg.Any<QueryOptions>())
                 .Returns(new QueryResult<CatalogService[]>
             {
                 StatusCode = HttpStatusCode.InternalServerError
@@ -144,18 +143,18 @@ namespace ConsulRx.UnitTests
             node.FullKey.Should().Be("shared/key1");
             node.Value.Should().Be("value1");
         }
-        
+
         [Fact]
         public async Task GetKeyReturnsNullWhenItDoesNotExist()
         {
             var node = await _observableConsul.GetKeyAsync("shared/missingkey");
             node.Should().BeNull();
         }
-        
+
         [Fact]
         public async Task GetKeyThrowsWhenConsulReturnsServerError()
         {
-            _consulClient.KV.Get("shared/key1", Arg.Any<QueryOptions>())
+            _consulClient.GetKeyAsync("shared/key1", Arg.Any<QueryOptions>())
                 .Returns(new QueryResult<KVPair>
                 {
                     StatusCode = HttpStatusCode.InternalServerError
@@ -185,11 +184,11 @@ namespace ConsulRx.UnitTests
             nodes.Should().NotBeNull();
             nodes.Should().BeEmpty();
         }
-        
+
         [Fact]
         public async Task GetKeyRecursiveThrowsWhenConsulReturnsServerError()
         {
-            _consulClient.KV.List("apps/myapp", Arg.Any<QueryOptions>())
+            _consulClient.GetKeyListAsync("apps/myapp", Arg.Any<QueryOptions>())
                 .Returns(new QueryResult<KVPair[]>
                 {
                     StatusCode = HttpStatusCode.InternalServerError

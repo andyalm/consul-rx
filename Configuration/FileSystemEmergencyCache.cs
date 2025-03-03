@@ -1,29 +1,23 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace ConsulRx.Configuration
 {
     public class FileSystemEmergencyCache : IEmergencyCache
     {
         private readonly Lazy<string> _filePath;
-        private readonly JsonSerializer _jsonSerializer;
 
         public FileSystemEmergencyCache()
         {
             _filePath = new Lazy<string>(ResolveFilePath);
-            _jsonSerializer = new JsonSerializer();
         }
-        
+
         public void Save(IDictionary<string, string> settings)
         {
-            using (var stream = File.Open(_filePath.Value, FileMode.Create))
-            {
-                var writer = new JsonTextWriter(new StreamWriter(stream));
-                _jsonSerializer.Serialize(writer, settings);
-                writer.Flush();
-            }
+            var json = JsonSerializer.Serialize(settings);
+            File.WriteAllText(_filePath.Value, json);
         }
 
         public bool TryLoad(out IDictionary<string, string> settings)
@@ -35,13 +29,10 @@ namespace ConsulRx.Configuration
             }
             try
             {
-                using (var stream = File.OpenRead(_filePath.Value))
-                {
-                    var deserializedSettings = _jsonSerializer
-                        .Deserialize<IDictionary<string, string>>(new JsonTextReader(new StreamReader(stream)));
-                    settings = new Dictionary<string, string>(deserializedSettings, StringComparer.OrdinalIgnoreCase);
-                    return true;
-                }
+                var json = File.ReadAllText(_filePath.Value);
+                var deserializedSettings = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+                settings = new Dictionary<string, string>(deserializedSettings, StringComparer.OrdinalIgnoreCase);
+                return true;
             }
             catch (Exception ex)
             {

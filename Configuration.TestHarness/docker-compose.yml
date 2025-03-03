@@ -1,10 +1,14 @@
-version: '3'
 services:
   consul:
-    image: consul
+    image: hashicorp/consul
     ports:
     - '8500:8500'
     command: ["agent", "-dev", "-client", "0.0.0.0"]
+    healthcheck:
+      test: ["CMD", "consul", "members"]
+      interval: 2s
+      timeout: 3s
+      retries: 10
   seeder:
     build:
       context: .
@@ -12,16 +16,17 @@ services:
     environment:
       CONSUL_HTTP_ADDR: "consul:8500"
     depends_on:
-    - consul
+      consul:
+        condition: service_healthy
   web:
     build:
-      context: bin/Debug/netcoreapp2.0/publish
-      dockerfile: Dockerfile-TestHarness
+      context: ..
+      dockerfile: Configuration.TestHarness/Dockerfile-TestHarness
     ports:
-    - '80:80'
+    - '8080:8080'
     environment:
       CONSUL_HTTP_ADDR: "consul:8500"
     depends_on:
-    - consul
-    - seeder
+      seeder:
+        condition: service_completed_successfully
   
