@@ -352,6 +352,9 @@ namespace ConsulRx.TestSupport
         }
 
         public IACLEndpoint ACL { get; }
+        public IPolicyEndpoint Policy { get; }
+        public IRoleEndpoint Role { get; }
+        public ITokenEndpoint Token { get; }
         public IAgentEndpoint Agent { get; }
         public ICatalogEndpoint Catalog => this;
         public IEventEndpoint Event { get; }
