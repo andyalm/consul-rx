@@ -1,5 +1,5 @@
 using ConsulRx.TestSupport;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 

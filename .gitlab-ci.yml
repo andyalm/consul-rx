@@ -6,8 +6,7 @@ stages:
 
 variables:
   Configuration: Release
-  NoSourceLink: 'true'
-  
+
 build:
   stage: build
   script:

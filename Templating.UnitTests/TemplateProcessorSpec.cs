@@ -1,6 +1,6 @@
 using System.IO;
 using ConsulRx.TestSupport;
-using FluentAssertions;
+using AwesomeAssertions;
 using Moq;
 using Xunit;
 

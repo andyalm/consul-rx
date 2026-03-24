@@ -6,17 +6,16 @@ using System.Net;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
-using Consul;
 using Spiffy.Monitoring;
 
 namespace ConsulRx
 {
     public class ObservableConsul : IObservableConsul
     {
-        private readonly IConsulClient _client;
+        private readonly IConsulHttpClient _client;
         private readonly ObservableConsulConfiguration _configuration;
 
-        public ObservableConsul(IConsulClient client, TimeSpan? longPollMaxWait = null, TimeSpan? retryDelay = null, string aclToken = null)
+        public ObservableConsul(IConsulHttpClient client, TimeSpan? longPollMaxWait = null, TimeSpan? retryDelay = null, string aclToken = null)
         {
             _client = client;
             _configuration = new ObservableConsulConfiguration
@@ -34,13 +33,8 @@ namespace ConsulRx
 
             _configuration = config;
 
-            _client = new ConsulClient(c =>
-            {
-                if(!string.IsNullOrEmpty(config.Endpoint))
-                    c.Address = new Uri(config.Endpoint);
-                if(!string.IsNullOrEmpty(config.Datacenter))
-                    c.Datacenter = config.Datacenter;
-            });
+            var address = new Uri(config.Endpoint ?? "http://localhost:8500");
+            _client = new ConsulHttpClient(address, config.Datacenter);
         }
 
         public ObservableConsulConfiguration Configuration => _configuration;
@@ -49,7 +43,7 @@ namespace ConsulRx
 
         public IObservable<ServiceObservation> ObserveService(string serviceName)
         {
-            return LongPoll(index => _client.Catalog.Service(serviceName, null,
+            return LongPoll(index => _client.GetServiceAsync(serviceName,
                 QueryOptions(index)), result => new ServiceObservation(serviceName, result),
                 "GetService", new Dictionary<string, object>
                 {
@@ -59,7 +53,7 @@ namespace ConsulRx
 
         public async Task<Service> GetServiceAsync(string serviceName)
         {
-            var result = await CallConsulAsync(() => _client.Catalog.Service(serviceName, null, QueryOptions(0)), 
+            var result = await CallConsulAsync(() => _client.GetServiceAsync(serviceName, QueryOptions(0)),
                 "GetService", new Dictionary<string, object>
                 {
                     {"ServiceName",serviceName}
@@ -75,7 +69,7 @@ namespace ConsulRx
 
         public IObservable<KeyObservation> ObserveKey(string key)
         {
-            return LongPoll(index => _client.KV.Get(key, QueryOptions(index)), result => new KeyObservation(key, result),
+            return LongPoll(index => _client.GetKeyAsync(key, QueryOptions(index)), result => new KeyObservation(key, result),
                 "GetKey", new Dictionary<string, object>
                 {
                     {"Key", key}
@@ -84,7 +78,7 @@ namespace ConsulRx
 
         public async Task<KeyValueNode> GetKeyAsync(string key)
         {
-            var result = await CallConsulAsync(() => _client.KV.Get(key, QueryOptions(0)),
+            var result = await CallConsulAsync(() => _client.GetKeyAsync(key, QueryOptions(0)),
                 "GetKey", new Dictionary<string, object>
                 {
                     {"Key", key}
@@ -100,7 +94,7 @@ namespace ConsulRx
 
         public IObservable<KeyRecursiveObservation> ObserveKeyRecursive(string prefix)
         {
-            return LongPoll(index => _client.KV.List(prefix, QueryOptions(index)), result => new KeyRecursiveObservation(prefix, result),
+            return LongPoll(index => _client.GetKeyListAsync(prefix, QueryOptions(index)), result => new KeyRecursiveObservation(prefix, result),
                 "GetKeys", new Dictionary<string, object>
                 {
                     {"KeyPrefix", prefix}
@@ -109,7 +103,7 @@ namespace ConsulRx
 
         public async Task<IEnumerable<KeyValueNode>> GetKeyRecursiveAsync(string prefix)
         {
-            var result = await CallConsulAsync(() => _client.KV.List(prefix, QueryOptions(0)),
+            var result = await CallConsulAsync(() => _client.GetKeyListAsync(prefix, QueryOptions(0)),
                 "GetKeys", new Dictionary<string, object>
                 {
                     {"KeyPrefix", prefix}

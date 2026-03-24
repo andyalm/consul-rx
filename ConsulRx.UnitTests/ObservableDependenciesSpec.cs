@@ -5,9 +5,8 @@ using System.Reactive.Concurrency;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Consul;
 using ConsulRx.TestSupport;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 namespace ConsulRx.UnitTests

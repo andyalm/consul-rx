@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Extensions.CommandLineUtils;
+using System.Threading.Tasks;
+using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Configuration;
 
 namespace ConsulRx.Templating.CommandLine
 {
     class Program
     {
-        static int Main(string[] args)
+        static async Task<int> Main(string[] args)
         {
             var config = new ConfigurationBuilder()
                 .AddYamlFile("development.yml", optional: true)
@@ -27,7 +28,7 @@ namespace ConsulRx.Templating.CommandLine
             var properties = app.Option("-p|--properties",
                 "The template properties to pass to the templates in the format name=value",
                 CommandOptionType.MultipleValue);
-            app.OnExecute(async () =>
+            app.OnExecuteAsync(async cancellationToken =>
             {
                 if (help.HasValue())
                 {
@@ -61,7 +62,7 @@ namespace ConsulRx.Templating.CommandLine
             });
             
 
-            return app.Execute(args);
+            return await app.ExecuteAsync(args);
         }
 
         private static string ParseTemplatePath(CommandOption templateArg, out string outputPath)

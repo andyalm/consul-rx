@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using Consul;
 using Spiffy.Monitoring;
 
 namespace ConsulRx
