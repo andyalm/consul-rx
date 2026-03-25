@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>2.0.0-alpha01</Version>
+    <PackageVersion Condition="$(PackageReleaseTag) != ''">$(PackageReleaseTag.Substring(1))</PackageVersion>
+    <PackageVersion Condition="$(PackageVersion)==''">2.0.0-dev</PackageVersion>
     <Description>Provides a configuration source that pulls values from Consul's Service Catalog and KV 
     Store.</Description>
     <Copyright>2017-2026</Copyright>
@@ -9,11 +10,8 @@
     <PackageTags>consul;configuration;reactive;extensions</PackageTags>
     <PackageProjectUrl>https://github.com/andyalm/consul-rx</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <PackageReleaseNotes>
-      - Replaced Newtonsoft.Json with System.Text.Json in FileSystemEmergencyCache.
-      - Retargeted from netstandard1.4 to netstandard2.0.
-    </PackageReleaseNotes>
     <LangVersion>Latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
@@ -21,5 +19,8 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.0.*" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 </Project>
