@@ -33,7 +33,7 @@ namespace ConsulRx
 
             _configuration = config;
 
-            var address = new Uri(config.Endpoint ?? "http://localhost:8500");
+            var address = new Uri(config.Endpoint);
             _client = new ConsulHttpClient(address, config.Datacenter);
         }
 
