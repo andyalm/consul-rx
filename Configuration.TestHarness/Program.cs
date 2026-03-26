@@ -1,14 +1,10 @@
-﻿using System;
-using ConsulRx.Configuration;
+﻿using ConsulRx.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddConsul(consul =>
 {
-    var consulAddr = Environment.GetEnvironmentVariable("CONSUL_HTTP_ADDR");
-    if (!string.IsNullOrEmpty(consulAddr))
-        consul.Endpoint($"http://{consulAddr}");
     consul
         .AutoUpdate()
         .MapHttpService("service1-http", "serviceEndpoints:service1")

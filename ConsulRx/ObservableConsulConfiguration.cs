@@ -10,12 +10,21 @@ namespace ConsulRx
         {
             get
             {
-                if (!string.IsNullOrEmpty(_endpoint))
-                    return _endpoint;
+                var endpoint = _endpoint
+                    ?? Environment.GetEnvironmentVariable("CONSUL_HTTP_ADDR")
+                    ?? "localhost:8500";
 
-                return null;
+                return NormalizeEndpoint(endpoint);
             }
             set => _endpoint = value;
+        }
+
+        private static string NormalizeEndpoint(string endpoint)
+        {
+            if (Uri.TryCreate(endpoint, UriKind.Absolute, out _))
+                return endpoint;
+
+            return $"http://{endpoint}";
         }
         public string Datacenter { get; set; }
         public string AclToken { get; set; }
