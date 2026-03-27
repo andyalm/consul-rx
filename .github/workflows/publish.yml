@@ -1,0 +1,34 @@
+name: Publish
+
+on:
+  release:
+    types: [ published ]
+
+jobs:
+  publish:
+    if: github.repository == 'andyalm/consul-rx'
+    runs-on: ubuntu-latest
+
+    env:
+      Configuration: Release
+      PackageReleaseNotes: ${{ github.event.release.body }}
+      PackageReleaseTag: ${{ github.event.release.tag_name }}
+
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - name: Build
+        run: dotnet build
+      - name: Publish ConsulRx to nuget.org
+        run: dotnet nuget push $(ls ConsulRx/bin/${{ env.Configuration }}/*.nupkg) -k ${{ secrets.NUGET_FEED_KEY }} -s https://api.nuget.org/v3/index.json
+      - name: Publish ConsulRx.Configuration to nuget.org
+        run: dotnet nuget push $(ls Configuration/bin/${{ env.Configuration }}/*.nupkg) -k ${{ secrets.NUGET_FEED_KEY }} -s https://api.nuget.org/v3/index.json
+      - name: Publish ConsulRx.Templating to nuget.org
+        run: dotnet nuget push $(ls Templating/bin/${{ env.Configuration }}/*.nupkg) -k ${{ secrets.NUGET_FEED_KEY }} -s https://api.nuget.org/v3/index.json
+
+    environment:
+      name: nuget.org
+      url: https://nuget.org/packages/ConsulRx

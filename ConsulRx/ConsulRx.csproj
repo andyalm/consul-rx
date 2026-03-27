@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>2.0.0-alpha01</Version>
+    <PackageVersion Condition="$(PackageReleaseTag) != ''">$(PackageReleaseTag.Substring(1))</PackageVersion>
+    <PackageVersion Condition="$(PackageVersion)==''">2.0.0-dev</PackageVersion>
     <Description>A library for consuming consul values in a continuous stream using the Reactive 
     Extensions</Description>
     <Copyright>2017-2026</Copyright>
@@ -9,12 +10,8 @@
     <PackageTags>consul;configuration;reactive;extensions</PackageTags>
     <PackageProjectUrl>https://github.com/andyalm/consul-rx</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <PackageReleaseNotes>
-      - Removed Consul NuGet package dependency to eliminate transitive CVEs.
-      - Added lightweight HttpClient-based Consul API implementation.
-      - Replaced Newtonsoft.Json with System.Text.Json.
-    </PackageReleaseNotes>
     <LangVersion>Latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
@@ -22,5 +19,8 @@
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
     <PackageReference Include="System.Reactive" Version="4.1.0" />
     <PackageReference Include="System.Collections.Immutable" Version="1.3.*" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 </Project>
