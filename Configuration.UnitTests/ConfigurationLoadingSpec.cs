@@ -61,8 +61,10 @@ namespace ConsulRx.Configuration.UnitTests
             consul.GetDependenciesAsync(null)
                 .ThrowsForAnyArgs(
                     new ConsulErrorException(new QueryResult {StatusCode = HttpStatusCode.InternalServerError}));
-            
-            var configProvider = (ConsulConfigurationProvider) _configSource.Build(consul);
+
+            var configProvider = (ConsulConfigurationProvider) _configSource
+                .Configure(options => options.AutoUpdate = false)
+                .Build(consul);
             await configProvider.LoadAsync();
             
             configProvider.TryGet("consul:folder1:item1", out var value).Should().BeTrue();
@@ -104,7 +106,9 @@ namespace ConsulRx.Configuration.UnitTests
             consul.GetDependenciesAsync(null)
                 .ReturnsForAnyArgs(
                     new ConsulState().UpdateKVNode(new KeyValueNode("apps/myapp/folder1/item1", "value1")));
-            var configProvider = (ConsulConfigurationProvider) _configSource.Build(consul);
+            var configProvider = (ConsulConfigurationProvider) _configSource
+                .Configure(options => options.AutoUpdate = false)
+                .Build(consul);
             await configProvider.LoadAsync();
 
             consul.DidNotReceiveWithAnyArgs().ObserveDependencies(null);

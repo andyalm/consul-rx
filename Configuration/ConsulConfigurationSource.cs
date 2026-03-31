@@ -12,16 +12,29 @@ namespace ConsulRx.Configuration
         private readonly KVTreeConfigMappingCollection _kvTreeConfigMappings = new KVTreeConfigMappingCollection();
         private readonly KVItemConfigMappingCollection _kvItemConfigMappings = new KVItemConfigMappingCollection();
         private IEmergencyCache _cache = NullEmergencyCache.Instance;
-        private bool _autoUpdate = false;
+        private readonly ConsulRxOptions _options = new ConsulRxOptions();
+        private bool _autoUpdateOptionsApplied = false;
 
         public ConsulConfigurationSource()
         {
             var autoUpdateEnv = Environment.GetEnvironmentVariable("CONSULRX_AUTO_UPDATE");
-            if(autoUpdateEnv != null &&
-               (autoUpdateEnv.Equals("1") || autoUpdateEnv.Equals("true", StringComparison.OrdinalIgnoreCase)))
+            if (autoUpdateEnv != null && IsFalsey(autoUpdateEnv))
             {
-                AutoUpdate();
+                _options.AutoUpdate = false;
             }
+        }
+
+        public ConsulConfigurationSource Configure(Action<ConsulRxOptions> configureOptions)
+        {
+            configureOptions(_options);
+            return this;
+        }
+
+        private static bool IsFalsey(string value)
+        {
+            return value.Length == 0
+                || value.Equals("0")
+                || value.Equals("false", StringComparison.OrdinalIgnoreCase);
         }
         
         public ConsulConfigurationSource Endpoint(string consulEndpoint)
@@ -107,9 +120,10 @@ namespace ConsulRx.Configuration
         /// </returns>
         public ConsulConfigurationSource AutoUpdate(AutoUpdateOptions options = null)
         {
-            _autoUpdate = true;
+            _options.AutoUpdate = true;
             options = options ?? new AutoUpdateOptions();
-            
+            _autoUpdateOptionsApplied = true;
+
             _consulConfig.RetryDelay = options.ErrorRetryInterval;
             _consulConfig.LongPollMaxWait = options.UpdateMaxInterval;
 
@@ -125,7 +139,14 @@ namespace ConsulRx.Configuration
 
         internal IConfigurationProvider Build(IObservableConsul consulClient)
         {
-            return new ConsulConfigurationProvider(consulClient, _cache, _consulDependencies, _serviceConfigMappings, _kvTreeConfigMappings, _kvItemConfigMappings, _autoUpdate);
+            if (_options.AutoUpdate && !_autoUpdateOptionsApplied)
+            {
+                var defaults = new AutoUpdateOptions();
+                _consulConfig.RetryDelay = defaults.ErrorRetryInterval;
+                _consulConfig.LongPollMaxWait = defaults.UpdateMaxInterval;
+            }
+
+            return new ConsulConfigurationProvider(consulClient, _cache, _consulDependencies, _serviceConfigMappings, _kvTreeConfigMappings, _kvItemConfigMappings, _options.AutoUpdate);
         }
 
         public ConsulConfigurationSource UseFilesystemCache()
