@@ -21,7 +21,8 @@ namespace ConsulRx
 
         private static string NormalizeEndpoint(string endpoint)
         {
-            if (Uri.TryCreate(endpoint, UriKind.Absolute, out _))
+            if (Uri.TryCreate(endpoint, UriKind.Absolute, out var uri)
+                && (uri.Scheme == "http" || uri.Scheme == "https"))
                 return endpoint;
 
             return $"http://{endpoint}";
